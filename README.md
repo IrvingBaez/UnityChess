@@ -1,0 +1,2 @@
+# Chess
+ Minimax for chess
