@@ -45,6 +45,7 @@ public class Pawn : ChessPiece
                 break;
         }
     }
+
     public override void SetMoves()
     {
         SetSight();

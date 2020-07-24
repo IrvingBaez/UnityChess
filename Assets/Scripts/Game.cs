@@ -7,10 +7,12 @@ using UnityEngine.UIElements;
 
 public class Game : MonoBehaviour
 {
-    public Pawn pawn;
+    public King king;
+    public Queen queen;
     public Rook rook;
     public Bishop bishop;
-    public Queen queen;
+    public Knight knight;
+    public Pawn pawn;
 
     public Board board;
 
@@ -112,7 +114,7 @@ public class Game : MonoBehaviour
         switch (symbol)
         {
             case ChessPiece.Symbol.K:
-                piece = Instantiate(pawn);
+                piece = Instantiate(king);
                 break;
             case ChessPiece.Symbol.Q:
                 piece = Instantiate(queen);
@@ -124,7 +126,7 @@ public class Game : MonoBehaviour
                 piece = Instantiate(bishop);
                 break;
             case ChessPiece.Symbol.N:
-                piece = Instantiate(pawn);
+                piece = Instantiate(knight);
                 break;
             case ChessPiece.Symbol.P:
                 piece = Instantiate(pawn);

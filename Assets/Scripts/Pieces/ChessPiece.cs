@@ -46,7 +46,6 @@ public abstract class ChessPiece : MonoBehaviour
 
     public abstract void Initialize(Position position, Color color);
     public abstract void SetSight();
-    public abstract void SetMoves();
 
     void Awake()
     {
@@ -81,8 +80,40 @@ public abstract class ChessPiece : MonoBehaviour
         transform.position = new Vector3(transform.position.x, transform.position.y, -0.5f);
     }
 
+    protected bool CanSeeThrough(int col, int row)
+    {
+        ChessPiece.Position testing = controller.IndexToPosition(col, row);
+        if (testing != null)
+        {
+            sight.Add(testing);
+            if (controller.GetOnPosition(testing) != null)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    public virtual void SetMoves()
+    {
+        moves = new List<Position>();
+        SetSight();
+
+        foreach (ChessPiece.Position pos in sight)
+        {
+            ChessPiece capture = controller.GetOnPosition(pos);
+            if (capture == null || capture.GetColor() != this.color)
+            {
+                moves.Add(pos);
+            }
+        }
+    }
+
     private void OnMouseDown()
     {
+        print("Piece clicked");
         this.SetMoves();
         PieceClicked?.Invoke(this, null);
     }

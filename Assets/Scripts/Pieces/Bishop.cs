@@ -15,16 +15,7 @@ public class Bishop : ChessPiece
 
         for (int i = 1; i < 8; i++)
         {
-            ChessPiece.Position testing = controller.IndexToPosition((int)position.col + i, position.row + i);
-            if (testing != null)
-            {
-                sight.Add(testing);
-                if (controller.GetOnPosition(testing) != null)
-                {
-                    break;
-                }
-            }
-            else
+            if (!CanSeeThrough((int)position.col + i, position.row + i))
             {
                 break;
             }
@@ -32,16 +23,7 @@ public class Bishop : ChessPiece
 
         for (int i = 1; i < 8; i++)
         {
-            ChessPiece.Position testing = controller.IndexToPosition((int)position.col + i, position.row - i);
-            if (testing != null)
-            {
-                sight.Add(testing);
-                if (controller.GetOnPosition(testing) != null)
-                {
-                    break;
-                }
-            }
-            else
+            if (!CanSeeThrough((int)position.col + i, position.row - i))
             {
                 break;
             }
@@ -49,16 +31,7 @@ public class Bishop : ChessPiece
 
         for (int i = 1; i < 8; i++)
         {
-            ChessPiece.Position testing = controller.IndexToPosition((int)position.col - i, position.row + i);
-            if (testing != null)
-            {
-                sight.Add(testing);
-                if (controller.GetOnPosition(testing) != null)
-                {
-                    break;
-                }
-            }
-            else
+            if (!CanSeeThrough((int)position.col - i, position.row + i))
             {
                 break;
             }
@@ -66,33 +39,9 @@ public class Bishop : ChessPiece
 
         for (int i = 1; i < 8; i++)
         {
-            ChessPiece.Position testing = controller.IndexToPosition((int)position.col - i, position.row - i);
-            if (testing != null)
-            {
-                sight.Add(testing);
-                if (controller.GetOnPosition(testing) != null)
-                {
-                    break;
-                }
-            }
-            else
+            if (!CanSeeThrough((int)position.col - i, position.row - i))
             {
                 break;
-            }
-        }
-    }
-
-    public override void SetMoves()
-    {
-        moves = new List<Position>();
-        SetSight();
-
-        foreach (ChessPiece.Position pos in sight)
-        {
-            ChessPiece capture = controller.GetOnPosition(pos);
-            if (capture == null || capture.GetColor() != this.color)
-            {
-                moves.Add(pos);
             }
         }
     }
