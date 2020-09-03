@@ -5,12 +5,12 @@ using System.Collections.Generic;
 
 public class Pawn : ChessPiece
 {
-    public override void Initialize(ChessPiece.Position position, ChessPiece.Color color)
+    public override void Initialize(ChessPiece.Position position, ChessPiece.Color color, Board board)
     {
-        this.Initialize(position, ChessPiece.Symbol.P, 1, color);
+        this.Initialize(position, ChessPiece.Symbol.P, 1, color, board);
     }
 
-    public override void SetSight()
+    protected override void SetSight()
     {
         this.sight = new List<Position>();
         Position testing;
@@ -46,7 +46,7 @@ public class Pawn : ChessPiece
         }
     }
 
-    public override void SetMoves()
+    protected override void SetMoves()
     {
         SetSight();
         this.moves = new List<Position>();
@@ -57,42 +57,47 @@ public class Pawn : ChessPiece
         {
             case Color.WHITE:
                 testing = controller.IndexToPosition((int)position.col, position.row + 1);
-                if (testing != null && controller.GetOnPosition(testing) == null)
+                if (testing != null && board.GetOnPosition(testing) == null && board.IsValidMove(this, testing))
                 {
                     this.moves.Add(testing);
                     freeAhead = true;
                 }
 
                 testing = controller.IndexToPosition((int)position.col, position.row + 2);
-                if (testing != null && position.row == 2 && freeAhead && controller.GetOnPosition(testing) == null)
+                if (testing != null && position.row == 2 && freeAhead && board.GetOnPosition(testing) == null && board.IsValidMove(this, testing))
                 {
                     this.moves.Add(testing);
                 }
                 break;
             case Color.BLACK:
                 testing = controller.IndexToPosition((int)position.col, position.row - 1);
-                if (testing != null && controller.GetOnPosition(testing) == null)
+                if (testing != null && board.GetOnPosition(testing) == null && board.IsValidMove(this, testing))
                 {
                     this.moves.Add(testing);
                     freeAhead = true;
                 }
                 
                 testing = controller.IndexToPosition((int)position.col, position.row - 2);
-                if (testing != null && position.row == 7 && freeAhead && controller.GetOnPosition(testing) == null)
+                if (testing != null && position.row == 7 && freeAhead && board.GetOnPosition(testing) == null && board.IsValidMove(this, testing))
                 {
                     this.moves.Add(testing);
                 }
                 break;
         }
+
         foreach (ChessPiece.Position pos in sight)
         {
-            ChessPiece capture = controller.GetOnPosition(pos);
-            if (capture != null && capture.GetColor() != this.color)
+            ChessPiece capture = board.GetOnPosition(pos);
+
+            if (!board.IsValidMove(this, pos))
             {
-                this.moves.Add(pos);
+                continue;
+            }
+
+            if (capture != null && capture.GetColor() != this.color && capture.GetType() != typeof(King))
+            {
+                moves.Add(pos);
             }
         }
-
-        //Filtrar movimientos inválidos.
     }
 }

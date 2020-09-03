@@ -4,11 +4,11 @@ using System.Collections.Generic;
 
 public class Rook : ChessPiece
 {
-    public override void Initialize(Position position, Color color)
+    public override void Initialize(Position position, Color color, Board board)
     {
-        this.Initialize(position, ChessPiece.Symbol.R, 5, color);
+        this.Initialize(position, ChessPiece.Symbol.R, 5, color, board);
     }
-    public override void SetSight()
+    protected override void SetSight()
     {
         sight = new List<Position>();
 

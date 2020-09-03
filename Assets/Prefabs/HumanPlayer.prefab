@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &1580292033147922107
+--- !u!1 &8480303311708706994
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,22 +8,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1557688358160034934}
-  - component: {fileID: 7886666728180657713}
+  - component: {fileID: 8480303311708706992}
+  - component: {fileID: 8480303311708706995}
   m_Layer: 0
-  m_Name: Board
+  m_Name: HumanPlayer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1557688358160034934
+--- !u!4 &8480303311708706992
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1580292033147922107}
+  m_GameObject: {fileID: 8480303311708706994}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.4177311, y: -0.07765786, z: -0.25057083}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -31,21 +31,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7886666728180657713
+--- !u!114 &8480303311708706995
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1580292033147922107}
+  m_GameObject: {fileID: 8480303311708706994}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 22e2668e206022646b4bddd3dd206ba1, type: 3}
+  m_Script: {fileID: 11500000, guid: 138540b6a5b401f48a2fda6fbaac7ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  king: {fileID: 9180931282698704743, guid: a7eddacbaa26cb94fa60ee6579e19035, type: 3}
-  queen: {fileID: 338153383439820349, guid: cfea153abbebbb44da9797d57be0b5de, type: 3}
-  rook: {fileID: 6632363207221219716, guid: fbb41481e243fe44ea42ca0a1ac45b78, type: 3}
-  bishop: {fileID: 103375463767196691, guid: e11336c876ff5df4c91c96301f4e05fd, type: 3}
-  knight: {fileID: 5967302735088622132, guid: aac900f73f9d9b64eacfbb8e096d3ea4, type: 3}
-  pawn: {fileID: 8805555656231602008, guid: bb6df0e6e9bb49f4991dfc9b93164b9a, type: 3}
+  controller: {fileID: 7937455816245257741, guid: c131d14a45205b74c923ab9bc716bd1f,
+    type: 3}
+  tile: {fileID: -7488828102988133596, guid: 79450975a8ebb724d8973430840d371e, type: 3}

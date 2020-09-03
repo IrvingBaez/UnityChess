@@ -4,12 +4,12 @@ using System.Collections.Generic;
 
 public class Queen : ChessPiece
 {
-    public override void Initialize(Position position, Color color)
+    public override void Initialize(Position position, Color color, Board board)
     {
-        Initialize(position, ChessPiece.Symbol.Q, 9, color);
+        Initialize(position, ChessPiece.Symbol.Q, 9, color, board);
     }
     
-    public override void SetSight()
+    protected override void SetSight()
     {
         sight = new List<Position>();
 

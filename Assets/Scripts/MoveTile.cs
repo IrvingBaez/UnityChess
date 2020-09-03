@@ -19,7 +19,7 @@ public class MoveTile : MonoBehaviour
         this.player = player;
         this.position = position;
 
-        transform.position = controller.board.SolveWorldPosition(position);
+        transform.position = controller.boardView.SolveWorldPosition(position);
         transform.position = new Vector3(transform.position.x, transform.position.y, -1);
     }
 

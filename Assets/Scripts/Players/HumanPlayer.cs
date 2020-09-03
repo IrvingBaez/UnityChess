@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class HumanPlayer : MonoBehaviour
+public class HumanPlayer : ChessPlayer
 {
     public event System.Action pieceSelected;
 
@@ -10,14 +10,21 @@ public class HumanPlayer : MonoBehaviour
     public MoveTile tile;
     private ChessPiece selected;
 
-    void Start()
+    public override void Move()
     {
         ChessPiece.PieceClicked += ChessPiece_PieceClicked;
     }
 
     private void ChessPiece_PieceClicked(object sender, System.EventArgs e)
     {
-        this.selected = (ChessPiece)sender;
+        ChessPiece clicked = (ChessPiece)sender;
+
+        if (clicked.GetColor() != this.color)
+        {
+            return;
+        }
+
+        this.selected = clicked;
         pieceSelected?.Invoke();
 
         foreach(ChessPiece.Position pos in this.selected.GetMoves())
@@ -31,5 +38,7 @@ public class HumanPlayer : MonoBehaviour
     {
         this.controller.Move(selected, position);
         this.selected = null;
+        ChessPiece.PieceClicked -= ChessPiece_PieceClicked;
+        RaisePlayerMoved();
     }
 }

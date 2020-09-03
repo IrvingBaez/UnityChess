@@ -1,143 +1,124 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class Game : MonoBehaviour
 {
-    public King king;
-    public Queen queen;
-    public Rook rook;
-    public Bishop bishop;
-    public Knight knight;
-    public Pawn pawn;
+    public event Action BoardChanged;
 
-    public Board board;
+    public Board boardRef;
+    public BoardView boardView;
+    [SerializeField] private CheckTile checkTileRef;
 
-    public Player white;
-    public Player black;
-    private Player currentTurn;
+    public ChessPlayer white;
+    public ChessPlayer black;
+    private ChessPlayer currentPlayer;
 
-    private ChessPiece[,] positions = new ChessPiece[8, 8];
-    private ChessPiece[] whitePieces = new ChessPiece[16];
-    private ChessPiece[] blackPieces = new ChessPiece[16];
-
+    private Board board;
+    private King whiteKing;
+    private King blackKing;
     private GameState gameState = GameState.ALIVE;
+    private CheckTile checkTile;
 
     public enum GameState { ALIVE, WHITE_CHECK, WHITE_MATE, BLACK_CHECK, BLACK_MATE, STALE_MATE, INVALID };
 
-    public Board GetBoard()
-    {
-        return board;
-    }
-
     void Start()
     {
-        whitePieces = new ChessPiece[]{
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.K, ChessPiece.Column.E, 1),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.Q, ChessPiece.Column.D, 1),
-            
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.R, ChessPiece.Column.A, 1),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.R, ChessPiece.Column.H, 1),
-            
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.B, ChessPiece.Column.C, 1),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.B, ChessPiece.Column.F, 1),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.N, ChessPiece.Column.B, 1),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.N, ChessPiece.Column.G, 1),
-            
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.P, ChessPiece.Column.A, 2),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.P, ChessPiece.Column.B, 2),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.P, ChessPiece.Column.C, 2),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.P, ChessPiece.Column.D, 2),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.P, ChessPiece.Column.E, 2),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.P, ChessPiece.Column.F, 2),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.P, ChessPiece.Column.G, 2),
-            Manufacture(ChessPiece.Color.WHITE, ChessPiece.Symbol.P, ChessPiece.Column.H, 2),
-        };
+        white.SetColor(ChessPiece.Color.WHITE);
+        black.SetColor(ChessPiece.Color.BLACK);
 
-        blackPieces = new ChessPiece[]{
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.K, ChessPiece.Column.E, 8),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.Q, ChessPiece.Column.D, 8),
+        white.PlayerMoved += OnPlayerMoved;
+        black.PlayerMoved += OnPlayerMoved;
 
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.R, ChessPiece.Column.A, 8),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.R, ChessPiece.Column.H, 8),
+        currentPlayer = white;
 
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.B, ChessPiece.Column.C, 8),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.B, ChessPiece.Column.F, 8),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.N, ChessPiece.Column.B, 8),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.N, ChessPiece.Column.G, 8),
+        NewGame();
+        Play();
+    }
 
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.P, ChessPiece.Column.A, 7),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.P, ChessPiece.Column.B, 7),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.P, ChessPiece.Column.C, 7),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.P, ChessPiece.Column.D, 7),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.P, ChessPiece.Column.E, 7),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.P, ChessPiece.Column.F, 7),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.P, ChessPiece.Column.G, 7),
-            Manufacture(ChessPiece.Color.BLACK, ChessPiece.Symbol.P, ChessPiece.Column.H, 7),
-        };
+    private void NewGame()
+    {
+        this.board = Instantiate(boardRef);
+        this.board.Initialize();
+        this.whiteKing = board.getWhitePieces()[0] as King;
+        this.blackKing = board.getBlackPieces()[0] as King;
+        boardView.setBoard(this.board);
+    }
 
-        foreach(ChessPiece piece in whitePieces)
+    private void Play()
+    {
+        if(gameState == GameState.ALIVE || gameState == GameState.BLACK_CHECK || gameState == GameState.WHITE_CHECK)
         {
-            positions[(int)piece.GetPosition().col, piece.GetPosition().row - 1] = piece;
-        }
-
-        foreach (ChessPiece piece in blackPieces)
-        {
-            positions[(int)piece.GetPosition().col, piece.GetPosition().row - 1] = piece;
+            currentPlayer.Move();
         }
     }
+
+    private void OnPlayerMoved()
+    {
+        if (currentPlayer == white)
+        {
+            currentPlayer = black;
+        }
+        else
+        {
+            currentPlayer = white;
+        }
+
+        SetGameState();
+        Play();
+    }
+    
 
     public void Move(ChessPiece piece, ChessPiece.Position destiny)
     {
-        ChessPiece.Position origin = piece.GetPosition();
-
-        ChessPiece captured = GetOnPosition(destiny);
-        if (captured != null)
+        if(gameState == GameState.BLACK_CHECK || gameState == GameState.WHITE_CHECK)
         {
-            print(captured);
-            Destroy(captured.gameObject);
+            Destroy(checkTile.gameObject);
         }
 
-        positions[(int)origin.col, origin.row - 1] = null;
-        positions[(int)destiny.col, destiny.row - 1] = piece;
-        piece.SetBoardPosition(destiny);
+        board.Move(piece, destiny);
+
+        BoardChanged?.Invoke();
+
+        SetGameState();
     }
 
-    private ChessPiece Manufacture(ChessPiece.Color color, ChessPiece.Symbol symbol, ChessPiece.Column col, int row)
+    private void SetGameState()
     {
-        ChessPiece piece;
-        ChessPiece.Position position = new ChessPiece.Position(col, row);
-
-        switch (symbol)
+        if (whiteKing.IsInCheck())
         {
-            case ChessPiece.Symbol.K:
-                piece = Instantiate(king);
-                break;
-            case ChessPiece.Symbol.Q:
-                piece = Instantiate(queen);
-                break;
-            case ChessPiece.Symbol.R:
-                piece = Instantiate(rook);
-                break;
-            case ChessPiece.Symbol.B:
-                piece = Instantiate(bishop);
-                break;
-            case ChessPiece.Symbol.N:
-                piece = Instantiate(knight);
-                break;
-            case ChessPiece.Symbol.P:
-                piece = Instantiate(pawn);
-                break;
-            default:
-                piece = null;
-                break;
+            OnCheck(whiteKing);
+            gameState = GameState.BLACK_CHECK;
+            return;
+        }
+        if (blackKing.IsInCheck())
+        {
+            OnCheck(blackKing);
+            gameState = GameState.WHITE_CHECK;
+            return;
         }
 
-        piece.Initialize(position, color);
-        return piece;
+        gameState = GameState.ALIVE;
+    }
+
+    private void OnCheck(King victim)
+    {
+        if (checkTile != null)
+        {
+            Destroy(checkTile.gameObject);
+        }
+
+        checkTile = Instantiate(checkTileRef);
+        checkTile.Initialize(victim.GetPosition(), boardView);
+
+        switch (victim.GetColor())
+        {
+            case ChessPiece.Color.WHITE:
+                gameState = GameState.BLACK_CHECK;
+                break;
+            case ChessPiece.Color.BLACK:
+                gameState = GameState.WHITE_CHECK;
+                break;
+        }
     }
 
     public ChessPiece.Position IndexToPosition(int col, int row)
@@ -150,23 +131,6 @@ public class Game : MonoBehaviour
         try
         {
             return new ChessPiece.Position((ChessPiece.Column)col, row);
-        }
-        catch (System.Exception)
-        {
-            return null;
-        }
-    }
-
-    public ChessPiece GetOnPosition(ChessPiece.Position position)
-    {
-        if (position.row < 1 || position.row > 8)
-        {
-            return null;
-        }
-
-        try
-        {
-            return positions[(int)position.col, position.row - 1];
         }
         catch (System.Exception)
         {

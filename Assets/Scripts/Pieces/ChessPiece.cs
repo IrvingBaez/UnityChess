@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Data;
-using UnityEditor;
 using UnityEngine;
 
 public abstract class ChessPiece : MonoBehaviour
@@ -25,7 +22,7 @@ public abstract class ChessPiece : MonoBehaviour
     protected List<Position> moves;
 
     protected Game controller;
-    private Board board;
+    protected Board board;
 
     public class Position
     {
@@ -44,21 +41,29 @@ public abstract class ChessPiece : MonoBehaviour
         }
     }
 
-    public abstract void Initialize(Position position, Color color);
-    public abstract void SetSight();
+    public static Color OpositeColor(Color color)
+    {
+        if (color == Color.WHITE)
+            return Color.BLACK;
+
+        return Color.WHITE;
+    }
+
+    public abstract void Initialize(Position position, Color color, Board board);
+    protected abstract void SetSight();
 
     void Awake()
     {
-        this.controller = GameObject.FindGameObjectWithTag("GameController").GetComponent<Game>();
-        this.board = controller.GetBoard();
+        controller = GameObject.FindGameObjectWithTag("GameController").GetComponent<Game>();
     }
 
-    protected void Initialize(Position position, Symbol symbol, float value, Color color)
+    protected void Initialize(Position position, Symbol symbol, float value, Color color, Board board)
     {
         this.SetBoardPosition(position);
         this.symbol = symbol;
         this.value = value;
         this.color = color;
+        this.board = board;
 
         switch (this.color)
         {
@@ -76,8 +81,6 @@ public abstract class ChessPiece : MonoBehaviour
     public void SetBoardPosition(Position position)
     {
         this.position = position;
-        transform.position = board.SolveWorldPosition(position);
-        transform.position = new Vector3(transform.position.x, transform.position.y, -0.5f);
     }
 
     protected bool CanSeeThrough(int col, int row)
@@ -86,7 +89,7 @@ public abstract class ChessPiece : MonoBehaviour
         if (testing != null)
         {
             sight.Add(testing);
-            if (controller.GetOnPosition(testing) != null)
+            if (board.GetOnPosition(testing) != null)
             {
                 return false;
             }
@@ -96,25 +99,33 @@ public abstract class ChessPiece : MonoBehaviour
         return false;
     }
 
-    public virtual void SetMoves()
+    protected virtual void SetMoves()
     {
         moves = new List<Position>();
         SetSight();
 
         foreach (ChessPiece.Position pos in sight)
         {
-            ChessPiece capture = controller.GetOnPosition(pos);
-            if (capture == null || capture.GetColor() != this.color)
+            if (!board.IsValidMove(this, pos))
+            {
+                continue;
+            }
+
+            ChessPiece capture = board.GetOnPosition(pos);
+            if (capture == null || (capture.color != this.color && capture.GetType() != typeof(King)))
             {
                 moves.Add(pos);
             }
         }
     }
 
+    public override string ToString()
+    {
+        return color + " " + symbol + " in " + position;
+    }
+
     private void OnMouseDown()
     {
-        print("Piece clicked");
-        this.SetMoves();
         PieceClicked?.Invoke(this, null);
     }
 
@@ -135,7 +146,7 @@ public abstract class ChessPiece : MonoBehaviour
 
     public List<Position> GetMoves()
     {
-        print(moves.Count);
+        SetMoves();
         return this.moves;
     }
 }
