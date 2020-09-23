@@ -43,14 +43,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b598d4281764184bae5fe0fb149f362, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  king: {fileID: 9180931282698704743, guid: a7eddacbaa26cb94fa60ee6579e19035, type: 3}
-  queen: {fileID: 338153383439820349, guid: cfea153abbebbb44da9797d57be0b5de, type: 3}
-  rook: {fileID: 6632363207221219716, guid: fbb41481e243fe44ea42ca0a1ac45b78, type: 3}
-  bishop: {fileID: 103375463767196691, guid: e11336c876ff5df4c91c96301f4e05fd, type: 3}
-  knight: {fileID: 5967302735088622132, guid: aac900f73f9d9b64eacfbb8e096d3ea4, type: 3}
-  pawn: {fileID: 8805555656231602008, guid: bb6df0e6e9bb49f4991dfc9b93164b9a, type: 3}
-  board: {fileID: 0}
-  checkTile: {fileID: 4862088492386287810, guid: 0eae2a3039dddb446865b2fec0edb980,
-    type: 3}
   white: {fileID: 0}
   black: {fileID: 0}
+  boardView: {fileID: 0}
+  textState: {fileID: 0}
+  textTurn: {fileID: 0}
+  checkTileRef: {fileID: 4862088492386287810, guid: 0eae2a3039dddb446865b2fec0edb980,
+    type: 3}

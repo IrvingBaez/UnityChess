@@ -1,21 +1,22 @@
-﻿using System;
+﻿using TMPro;
 using UnityEngine;
 
 public class Game : MonoBehaviour
 {
-    public event Action BoardChanged;
-
-    public Board boardRef;
+    [SerializeField] private ChessPlayer white;
+    [SerializeField] private ChessPlayer black;
     public BoardView boardView;
+
+    [Header("UI")]
+    [SerializeField] private TMP_Text textState;
+    [SerializeField] private TMP_Text textTurn;
+
+    [Header("References")]
     [SerializeField] private CheckTile checkTileRef;
-
-    public ChessPlayer white;
-    public ChessPlayer black;
-    private ChessPlayer currentPlayer;
-
+    [SerializeField] private Board boardRef;
+    
     private Board board;
-    private King whiteKing;
-    private King blackKing;
+    private ChessPlayer currentPlayer;
     private GameState gameState = GameState.ALIVE;
     private CheckTile checkTile;
 
@@ -26,34 +27,36 @@ public class Game : MonoBehaviour
         white.SetColor(ChessPiece.Color.WHITE);
         black.SetColor(ChessPiece.Color.BLACK);
 
-        white.PlayerMoved += OnPlayerMoved;
-        black.PlayerMoved += OnPlayerMoved;
-
         currentPlayer = white;
-
         NewGame();
-        Play();
     }
 
     private void NewGame()
     {
-        this.board = Instantiate(boardRef);
-        this.board.Initialize();
-        this.whiteKing = board.getWhitePieces()[0] as King;
-        this.blackKing = board.getBlackPieces()[0] as King;
-        boardView.setBoard(this.board);
+        board = new Board();
+
+        white.game = this;
+        black.game = this;
+        white.SetBoard(board);
+        black.SetBoard(board);
+        boardView.SetBoard(board);
+
+        Play();
     }
 
     private void Play()
     {
-        if(gameState == GameState.ALIVE || gameState == GameState.BLACK_CHECK || gameState == GameState.WHITE_CHECK)
+        print(board.Fen());
+        if (gameState == GameState.ALIVE || gameState == GameState.BLACK_CHECK || gameState == GameState.WHITE_CHECK)
         {
             currentPlayer.Move();
         }
     }
 
-    private void OnPlayerMoved()
+    public void Move(Move move)
     {
+        board.PerformMove(move);
+
         if (currentPlayer == white)
         {
             currentPlayer = black;
@@ -63,50 +66,41 @@ public class Game : MonoBehaviour
             currentPlayer = white;
         }
 
-        SetGameState();
-        Play();
-    }
-    
-
-    public void Move(ChessPiece piece, ChessPiece.Position destiny)
-    {
-        if(gameState == GameState.BLACK_CHECK || gameState == GameState.WHITE_CHECK)
-        {
+        if(checkTile != null)
             Destroy(checkTile.gameObject);
-        }
-
-        board.Move(piece, destiny);
-
-        BoardChanged?.Invoke();
-
+        
         SetGameState();
+
+        textState.text = gameState.ToString();
+        textTurn.text = currentPlayer.GetColor().ToString();
+
+        Play();
     }
 
     private void SetGameState()
     {
-        if (whiteKing.IsInCheck())
-        {
-            OnCheck(whiteKing);
-            gameState = GameState.BLACK_CHECK;
-            return;
-        }
-        if (blackKing.IsInCheck())
-        {
-            OnCheck(blackKing);
-            gameState = GameState.WHITE_CHECK;
-            return;
-        }
+        King king = null;
 
-        gameState = GameState.ALIVE;
+        switch (currentPlayer.GetColor())
+        {
+            case ChessPiece.Color.WHITE:
+                king = board.GetWhiteKing();
+                break;
+            case ChessPiece.Color.BLACK:
+                king = board.GetBlackKing();
+                break;
+        }
+        
+        gameState = king.GetGameState();
+        
+        if(gameState == GameState.WHITE_CHECK || gameState == GameState.BLACK_CHECK)
+        {
+            OnCheck(king);
+        }
     }
 
     private void OnCheck(King victim)
     {
-        if (checkTile != null)
-        {
-            Destroy(checkTile.gameObject);
-        }
-
         checkTile = Instantiate(checkTileRef);
         checkTile.Initialize(victim.GetPosition(), boardView);
 
@@ -118,23 +112,6 @@ public class Game : MonoBehaviour
             case ChessPiece.Color.BLACK:
                 gameState = GameState.WHITE_CHECK;
                 break;
-        }
-    }
-
-    public ChessPiece.Position IndexToPosition(int col, int row)
-    {
-        if (row < 1 || row > 8 || col < 0 || col > 7)
-        {
-            return null;
-        }
-
-        try
-        {
-            return new ChessPiece.Position((ChessPiece.Column)col, row);
-        }
-        catch (System.Exception)
-        {
-            return null;
         }
     }
 }

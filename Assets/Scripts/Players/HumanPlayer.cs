@@ -1,23 +1,18 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class HumanPlayer : ChessPlayer
+﻿public class HumanPlayer : ChessPlayer
 {
     public event System.Action pieceSelected;
 
-    public Game controller;
     public MoveTile tile;
     private ChessPiece selected;
 
     public override void Move()
     {
-        ChessPiece.PieceClicked += ChessPiece_PieceClicked;
+        game.boardView.PieceClicked += PieceClicked;        
     }
 
-    private void ChessPiece_PieceClicked(object sender, System.EventArgs e)
+    private void PieceClicked()
     {
-        ChessPiece clicked = (ChessPiece)sender;
+        ChessPiece clicked = game.boardView.clicked;
 
         if (clicked.GetColor() != this.color)
         {
@@ -27,18 +22,17 @@ public class HumanPlayer : ChessPlayer
         this.selected = clicked;
         pieceSelected?.Invoke();
 
-        foreach(ChessPiece.Position pos in this.selected.GetMoves())
+        foreach(Move move in this.selected.GetMoves())
         {
             MoveTile newTile = Instantiate(tile);
-            newTile.Initialize(this, new ChessPiece.Position(pos.col, pos.row));
+            newTile.Initialize(this, move);
         }
+        this.selected = null;
     }
 
-    public void SetDestiny(ChessPiece.Position position)
+    public void SetMove(Move move)
     {
-        this.controller.Move(selected, position);
-        this.selected = null;
-        ChessPiece.PieceClicked -= ChessPiece_PieceClicked;
-        RaisePlayerMoved();
+        game.boardView.PieceClicked -= PieceClicked;
+        game.Move(move);
     }
 }

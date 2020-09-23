@@ -4,10 +4,8 @@ using System.Collections.Generic;
 
 public class Knight : ChessPiece
 {
-    public override void Initialize(Position position, Color color, Board board)
-    {
-        Initialize(position, Symbol.N, 3, color, board);
-    }
+    public Knight(Position position, Color color, Board board)
+        : base(position, Symbol.N, 3, color, board){}
 
     protected override void SetSight()
     {

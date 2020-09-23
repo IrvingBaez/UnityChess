@@ -1,45 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 
-public abstract class ChessPiece : MonoBehaviour
+public abstract class ChessPiece
 {
-    public static event EventHandler PieceClicked;
-
     public enum Color { BLACK, WHITE };
     public enum Symbol { K, Q, R, B, N, P };
-    public enum Column { A, B, C, D, E, F, G, H };
 
-    public Sprite black_sprite;
-    public Sprite white_sprite;
-    
+    protected static int nextId = 0;
+
     protected Color color;
     protected Symbol symbol;
     protected float value;
     protected Position position;
+    protected readonly int id;
 
     protected List<Position> sight;
-    protected List<Position> moves;
+    protected List<Move> moves;
 
-    protected Game controller;
-    protected Board board;
+    public Board board;
+    public bool isCopy = false;
 
-    public class Position
+    protected ChessPiece(Position position, Symbol symbol, float value, Color color, Board board)
     {
-        public readonly ChessPiece.Column col;
-        public readonly int row;
-        
-        public Position(ChessPiece.Column col, int row)
-        {
-            this.col = col;
-            this.row = row;
-        }
-
-        public override string ToString()
-        {
-            return col + row.ToString();
-        }
+        this.SetBoardPosition(position);
+        this.symbol = symbol;
+        this.value = value;
+        this.color = color;
+        this.board = board;
+        this.id = nextId;
+        nextId++;
     }
+    protected abstract void SetSight();
 
     public static Color OpositeColor(Color color)
     {
@@ -49,35 +40,6 @@ public abstract class ChessPiece : MonoBehaviour
         return Color.WHITE;
     }
 
-    public abstract void Initialize(Position position, Color color, Board board);
-    protected abstract void SetSight();
-
-    void Awake()
-    {
-        controller = GameObject.FindGameObjectWithTag("GameController").GetComponent<Game>();
-    }
-
-    protected void Initialize(Position position, Symbol symbol, float value, Color color, Board board)
-    {
-        this.SetBoardPosition(position);
-        this.symbol = symbol;
-        this.value = value;
-        this.color = color;
-        this.board = board;
-
-        switch (this.color)
-        {
-            case Color.WHITE:
-                this.GetComponent<SpriteRenderer>().sprite = white_sprite;
-                break;
-            case Color.BLACK:
-                this.GetComponent<SpriteRenderer>().sprite = black_sprite;
-                break;
-        }
-
-        this.gameObject.AddComponent<BoxCollider2D>();
-    }
-
     public void SetBoardPosition(Position position)
     {
         this.position = position;
@@ -85,7 +47,7 @@ public abstract class ChessPiece : MonoBehaviour
 
     protected bool CanSeeThrough(int col, int row)
     {
-        ChessPiece.Position testing = controller.IndexToPosition(col, row);
+        Position testing = Position.IndexToPosition(col, row);
         if (testing != null)
         {
             sight.Add(testing);
@@ -101,32 +63,31 @@ public abstract class ChessPiece : MonoBehaviour
 
     protected virtual void SetMoves()
     {
-        moves = new List<Position>();
+        moves = new List<Move>();
         SetSight();
 
-        foreach (ChessPiece.Position pos in sight)
+        foreach (Position pos in sight)
         {
-            if (!board.IsValidMove(this, pos))
-            {
-                continue;
-            }
-
             ChessPiece capture = board.GetOnPosition(pos);
             if (capture == null || (capture.color != this.color && capture.GetType() != typeof(King)))
             {
-                moves.Add(pos);
+                Move move = new Move(this, pos);
+                if (board.IsValidMove(move))
+                {
+                    moves.Add(move);
+                }
             }
         }
     }
 
     public override string ToString()
     {
-        return color + " " + symbol + " in " + position;
+        return $"{id}: {color} {symbol} in {position}";
     }
 
-    private void OnMouseDown()
+    public float GetValue()
     {
-        PieceClicked?.Invoke(this, null);
+        return this.value;
     }
 
     public Color GetColor()
@@ -144,7 +105,7 @@ public abstract class ChessPiece : MonoBehaviour
         return this.position;
     }
 
-    public List<Position> GetMoves()
+    public List<Move> GetMoves()
     {
         SetMoves();
         return this.moves;

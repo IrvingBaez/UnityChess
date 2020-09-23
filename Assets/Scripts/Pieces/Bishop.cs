@@ -4,10 +4,8 @@ using System.Collections.Generic;
 
 public class Bishop : ChessPiece
 {
-    public override void Initialize(Position position, Color color, Board board)
-    {
-        Initialize(position, ChessPiece.Symbol.B, 3, color, board);
-    }
+    public Bishop(Position position, Color color, Board board) 
+        : base(position, ChessPiece.Symbol.B, 3, color, board){ }
 
     protected override void SetSight()
     {

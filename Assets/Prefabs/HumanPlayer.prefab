@@ -43,6 +43,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 138540b6a5b401f48a2fda6fbaac7ff0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  controller: {fileID: 7937455816245257741, guid: c131d14a45205b74c923ab9bc716bd1f,
-    type: 3}
+  game: {fileID: 0}
   tile: {fileID: -7488828102988133596, guid: 79450975a8ebb724d8973430840d371e, type: 3}

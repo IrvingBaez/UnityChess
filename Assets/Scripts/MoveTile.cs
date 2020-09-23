@@ -8,16 +8,18 @@ public class MoveTile : MonoBehaviour
     
     private Game controller;
     private HumanPlayer player;
-    private ChessPiece.Position position;
+    private Position position;
+    private Move move;
 
-    public void Initialize(HumanPlayer player, ChessPiece.Position position)
+    public void Initialize(HumanPlayer player, Move move)
     {
         TileClicked += DestroyTiles;
         player.pieceSelected += DestroyTiles;
 
-        this.controller = GameObject.FindGameObjectWithTag("GameController").GetComponent<Game>();
+        controller = GameObject.FindGameObjectWithTag("GameController").GetComponent<Game>();
         this.player = player;
-        this.position = position;
+        this.move = move;
+        position = move.destiny;
 
         transform.position = controller.boardView.SolveWorldPosition(position);
         transform.position = new Vector3(transform.position.x, transform.position.y, -1);
@@ -25,7 +27,7 @@ public class MoveTile : MonoBehaviour
 
     public void OnMouseDown()
     {
-        this.player.SetDestiny(position);
+        this.player.SetMove(move);
         TileClicked?.Invoke();
     }
 

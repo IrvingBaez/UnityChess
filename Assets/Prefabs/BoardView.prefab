@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1292144553712519221}
   m_Layer: 0
-  m_Name: Board
+  m_Name: BoardView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -42,7 +42,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9091642335405568204}
   - component: {fileID: 5116791588199669890}
-  - component: {fileID: 8245903730759179600}
+  - component: {fileID: 2048924952}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -114,7 +114,7 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &8245903730759179600
+--- !u!114 &2048924952
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -126,6 +126,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4db6fd57fbc73b949b20d207ed2dc2e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  pieceView: {fileID: 3689261913281286427, guid: 2c200cd0a8895054688b12cfaa95de7c,
+    type: 3}
+  whiteKingSprite: {fileID: 21300000, guid: 8eb0cbb80382c7a4683ce43a7ee6500d, type: 3}
+  whiteQueenSprite: {fileID: 21300000, guid: 66fc1b8b284a90441bce940f8d867ce0, type: 3}
+  whiteRookSprite: {fileID: 21300000, guid: 04b2f80b008543c4e84d8a8e3ed96f60, type: 3}
+  whiteBishopSprite: {fileID: 21300000, guid: 76d6b8ce24cc89c4a9a8fbcea1b8d7d9, type: 3}
+  whiteKnightSprite: {fileID: 21300000, guid: d7a02ef1e2393a149bb625d444e357dd, type: 3}
+  whitePawnSprite: {fileID: 21300000, guid: 1aa8762d7531a2044a0c127648538f28, type: 3}
+  blackKingSprite: {fileID: 21300000, guid: 8761b81c11abdb84faa93801d389a6b1, type: 3}
+  blackQueenSprite: {fileID: 21300000, guid: 3b80dbc362a22a44da59ddb064d15853, type: 3}
+  blackRookSprite: {fileID: 21300000, guid: 863609ef8846cc343b2095d191d2452b, type: 3}
+  blackBishopSprite: {fileID: 21300000, guid: b1a4baaec111baa4ab301cd21687af39, type: 3}
+  blackKnightSprite: {fileID: 21300000, guid: ff56f8cc72a35d14ba2fc6d2ce94dc66, type: 3}
+  blackPawnSprite: {fileID: 21300000, guid: 4bb17c4eaec60d24fa9749beccc8fe94, type: 3}
 --- !u!1 &8635691008146821246
 GameObject:
   m_ObjectHideFlags: 0
