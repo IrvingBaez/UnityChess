@@ -41,6 +41,10 @@ public class MinimaxProcessor<I, C>
                 {
                     bestChild = child;
                 }
+                else if (child.GetValue() == bestChild.GetValue() && Random.value < 0.1)
+                {
+                    bestChild = child;
+                }
             }
             currentNode.SetValue(bestChild.GetValue());
             currentNode.SetBestChild(bestChild);

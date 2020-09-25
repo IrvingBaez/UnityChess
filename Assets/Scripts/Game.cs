@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using System.Collections;
+using TMPro;
 using UnityEngine;
 
 public class Game : MonoBehaviour
@@ -41,14 +42,16 @@ public class Game : MonoBehaviour
         black.SetBoard(board);
         boardView.SetBoard(board);
 
-        Play();
+        boardView.DrawBoard();
+        StartCoroutine(Play());
     }
 
-    private void Play()
+    private IEnumerator Play()
     {
         print(board.Fen());
         if (gameState == GameState.ALIVE || gameState == GameState.BLACK_CHECK || gameState == GameState.WHITE_CHECK)
         {
+            yield return null;
             currentPlayer.Move();
         }
     }
@@ -56,6 +59,7 @@ public class Game : MonoBehaviour
     public void Move(Move move)
     {
         board.PerformMove(move);
+        boardView.DrawBoard();
 
         if (currentPlayer == white)
         {
@@ -74,7 +78,7 @@ public class Game : MonoBehaviour
         textState.text = gameState.ToString();
         textTurn.text = currentPlayer.GetColor().ToString();
 
-        Play();
+        StartCoroutine(Play());
     }
 
     private void SetGameState()

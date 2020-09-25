@@ -3,8 +3,6 @@ using System.Collections.Generic;
 
 public class Board
 {
-    public event Action OnBoardChanged;
-
     private ChessPiece[,] positions = new ChessPiece[8, 8];
     private Position enPassant;
     private ChessPiece.Color turn;
@@ -302,6 +300,8 @@ public class Board
         ChessPiece captured = GetOnPosition(move.destiny);
         if (captured != null)
         {
+            halfTurn = -1;
+
             whitePieces.Remove(captured);
             blackPieces.Remove(captured);
             positions[(int)captured.GetPosition().col, captured.GetPosition().row - 1] = null;
@@ -330,24 +330,29 @@ public class Board
             }
         }
 
-        if (move.piece is Pawn && (move.destiny.row == 8 || move.destiny.row == 1))
+        if (move.piece is Pawn)
         {
-            Pawn pawn = (Pawn)move.piece;
-            Queen queen = new Queen(pawn.GetPosition(), pawn.GetColor(), this);
+            halfTurn = -1;
 
-            switch (move.piece.GetColor())
+            if(move.destiny.row == 8 || move.destiny.row == 1)
             {
-                case ChessPiece.Color.WHITE:
-                    whitePieces.Remove(move.piece);
-                    whitePieces.Add(queen);
-                    break;
-                case ChessPiece.Color.BLACK:
-                    blackPieces.Remove(move.piece);
-                    blackPieces.Add(queen);
-                    break;
+                Pawn pawn = (Pawn)move.piece;
+                Queen queen = new Queen(pawn.GetPosition(), pawn.GetColor(), this);
+
+                switch (move.piece.GetColor())
+                {
+                    case ChessPiece.Color.WHITE:
+                        whitePieces.Remove(move.piece);
+                        whitePieces.Add(queen);
+                        break;
+                    case ChessPiece.Color.BLACK:
+                        blackPieces.Remove(move.piece);
+                        blackPieces.Add(queen);
+                        break;
+                }
+                positions[(int)pawn.GetPosition().col, pawn.GetPosition().row - 1] = null;
+                move.piece = queen;
             }
-            positions[(int)pawn.GetPosition().col, pawn.GetPosition().row - 1] = null;
-            move.piece = queen;
         }
 
         positions[(int)origin.col, origin.row - 1] = null;
@@ -362,8 +367,6 @@ public class Board
         }
         
         turn = (ChessPiece.Color)(((int)turn + 1) % 2);
-
-        OnBoardChanged?.Invoke();
     }
 
     private void PerformCastling(Move move)
@@ -383,12 +386,18 @@ public class Board
                 rookDestiny = new Position(move.destiny.col - 1, move.destiny.row);
                 break;
         }
-        PerformMove(new Move(rook, rookDestiny));
+
+        Position origin = rook.GetPosition();
+
+        positions[(int)origin.col, origin.row - 1] = null;
+        positions[(int)rookDestiny.col, rookDestiny.row - 1] = rook;
+        rook.SetBoardPosition(rookDestiny);
+        //PerformMove(new Move(rook, rookDestiny));
     }
 
     public bool IsValidMove(Move move)
     {
-        if (move.piece.GetColor() != turn)
+        if (move.piece.GetColor() != turn || halfTurn > 50)
         {
             return false;
         }

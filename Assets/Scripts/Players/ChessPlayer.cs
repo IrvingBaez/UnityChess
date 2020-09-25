@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Jobs;
+using UnityEngine;
 
 public abstract class ChessPlayer : MonoBehaviour
 {
