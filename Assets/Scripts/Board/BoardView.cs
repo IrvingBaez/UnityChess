@@ -32,11 +32,9 @@ public class BoardView : MonoBehaviour
     public void SetBoard(Board board)
     {
         this.board = board;
-        board.OnBoardChanged += drawBoard;
-        drawBoard();
     }
 
-    private void drawBoard()
+    public void DrawBoard()
     {
         DrawingBoard?.Invoke();
         foreach (ChessPiece piece in board.GetWhitePieces())

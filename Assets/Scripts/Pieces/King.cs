@@ -27,7 +27,7 @@ public class King : ChessPiece
     {
         base.SetMoves();
         
-        if (IsInCheck())
+        if (board.IsInCheck(this))
         {
             return;
         }
@@ -38,8 +38,8 @@ public class King : ChessPiece
             canShortCastle = canShortCastle && board.GetOnPosition(new Position(position.col + 1, position.row)) == null;
             canShortCastle = canShortCastle && board.GetOnPosition(new Position(position.col + 2, position.row)) == null;
 
-            canShortCastle = canShortCastle && !IsInCheck(new Position(position.col + 1, position.row));
-            canShortCastle = canShortCastle && !IsInCheck(new Position(position.col + 2, position.row));
+            canShortCastle = canShortCastle && !board.IsInCheck(color, new Position(position.col + 1, position.row));
+            canShortCastle = canShortCastle && !board.IsInCheck(color, new Position(position.col + 2, position.row));
 
             if (canShortCastle)
             {
@@ -54,8 +54,8 @@ public class King : ChessPiece
             canLongCastle = canLongCastle && board.GetOnPosition(new Position(position.col - 2, position.row)) == null;
             canLongCastle = canLongCastle && board.GetOnPosition(new Position(position.col - 3, position.row)) == null;
 
-            canLongCastle = canLongCastle && !IsInCheck(new Position(position.col - 1, position.row));
-            canLongCastle = canLongCastle && !IsInCheck(new Position(position.col - 2, position.row));
+            canLongCastle = canLongCastle && !board.IsInCheck(color, new Position(position.col - 1, position.row));
+            canLongCastle = canLongCastle && !board.IsInCheck(color, new Position(position.col - 2, position.row));
 
             if (canLongCastle)
             {
@@ -91,192 +91,6 @@ public class King : ChessPiece
                 canShortCastle = false;
                 break;
         }
-    }
-
-    public bool IsInCheck()
-    {
-        return IsInCheck(this.position);
-    }
-
-    private bool IsInCheck(Position position)
-    {
-        Color oposite = ChessPiece.OpositeColor(color);
-
-        //Rooks and Queen
-        for (int i = 1; i < 8; i++)
-        {
-            Position pos = new Position(position.col + i, position.row);
-            if (board.LookFor(oposite, typeof(Rook), pos)) { return true; }
-            if (board.LookFor(oposite, typeof(Queen), pos)) { return true; }
-            if (board.GetOnPosition(pos) != null) { break; }
-        }
-
-        for (int i = 1; i < 8; i++)
-        {
-            Position pos = new Position(position.col - i, position.row );
-            if (board.LookFor(oposite, typeof(Rook), pos)) { return true; }
-            if (board.LookFor(oposite, typeof(Queen), pos)) { return true; }
-            if (board.GetOnPosition(pos) != null) { break; }
-        }
-
-        for (int i = 1; i < 8; i++)
-        {
-            Position pos = new Position(position.col, position.row + i);
-            if (board.LookFor(oposite, typeof(Rook), pos)) { return true; }
-            if (board.LookFor(oposite, typeof(Queen), pos)) { return true; }
-            if (board.GetOnPosition(pos) != null) { break; }
-        }
-
-        for (int i = 1; i < 8; i++)
-        {
-            Position pos = new Position(position.col, position.row - i);
-            if (board.LookFor(oposite, typeof(Rook), pos)) { return true; }
-            if (board.LookFor(oposite, typeof(Queen), pos)) { return true; }
-            if (board.GetOnPosition(pos) != null) { break; }
-        }
-
-        //Bishops and Queen 
-        for (int i = 1; i < 8; i++)
-        {
-            Position pos = new Position(position.col + i, position.row + i);
-            if (board.LookFor(oposite, typeof(Bishop), pos)) { return true; }
-            if (board.LookFor(oposite, typeof(Queen), pos)) { return true; }
-            if (board.GetOnPosition(pos) != null) { break; }
-        }
-
-        for (int i = 1; i < 8; i++)
-        {
-            Position pos = new Position(position.col + i, position.row - i);
-            if (board.LookFor(oposite, typeof(Bishop), pos)) { return true; }
-            if (board.LookFor(oposite, typeof(Queen), pos)) { return true; }
-            if (board.GetOnPosition(pos) != null) { break; }
-        }
-
-        for (int i = 1; i < 8; i++)
-        {
-            Position pos = new Position(position.col - i, position.row + i);
-            if (board.LookFor(oposite, typeof(Bishop), pos)) { return true; }
-            if (board.LookFor(oposite, typeof(Queen), pos)) { return true; }
-            if (board.GetOnPosition(pos) != null) { break; }
-        }
-
-        for (int i = 1; i < 8; i++)
-        {
-            Position pos = new Position(position.col - i, position.row - i);
-            if (board.LookFor(oposite, typeof(Bishop), pos)) { return true; }
-            if (board.LookFor(oposite, typeof(Queen), pos)) { return true; }
-            if (board.GetOnPosition(pos) != null) { break; }
-        }
-
-        bool check = false;
-
-        //Knights
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col - 2, position.row + 1));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col - 2, position.row - 1));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col - 1, position.row + 2));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col - 1, position.row - 2));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col + 1, position.row + 2));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col + 1, position.row - 2));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col + 2, position.row + 1));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col + 2, position.row - 1));
-        if (check) { return true; }
-
-        //King
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col - 1, position.row - 1));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col - 1, position.row));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col - 1, position.row + 1));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col, position.row - 1));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col, position.row + 1));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col + 1, position.row - 1));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col + 1, position.row));
-        check = check || board.LookFor(oposite, typeof(Knight), new Position(position.col + 1, position.row + 1));
-        if (check) { return true; }
-
-        //Pawns
-        switch (color)
-        {
-            case Color.WHITE:
-                check = check || board.LookFor(oposite, typeof(Pawn), new Position(position.col - 1, position.row + 1));
-                check = check || board.LookFor(oposite, typeof(Pawn), new Position(position.col + 1, position.row + 1));
-                break;
-            case Color.BLACK:
-                check = check || board.LookFor(oposite, typeof(Pawn), new Position(position.col - 1, position.row - 1));
-                check = check || board.LookFor(oposite, typeof(Pawn), new Position(position.col + 1, position.row - 1));
-                break;
-        }
-
-        return check;
-    }
-
-    private bool IsStaleMate()
-    {
-        switch (this.color)
-        {
-            case Color.WHITE:
-                foreach (ChessPiece piece in board.GetWhitePieces())
-                {
-                    if (piece.GetMoves().Count > 0)
-                    {
-                        return false;
-                    }
-                }
-                break;
-            case Color.BLACK:
-                foreach (ChessPiece piece in board.GetBlackPieces())
-                {
-                    if (piece.GetMoves().Count > 0)
-                    {
-                        return false;
-                    }
-                }
-                break;
-        }
-
-        return true;
-    }
-
-    public Game.GameState GetGameState()
-    {
-        if (IsInCheck())
-        {
-            if (IsStaleMate())
-            {
-                //Checkmate
-                switch (color)
-                {
-                    case Color.WHITE:
-                        return Game.GameState.BLACK_MATE;
-                    case Color.BLACK:
-                        return Game.GameState.WHITE_MATE;
-                }
-            }
-            else
-            {
-                //Check
-                switch (color)
-                {
-                    case Color.WHITE:
-                        return Game.GameState.BLACK_CHECK;
-                    case Color.BLACK:
-                        return Game.GameState.WHITE_CHECK;
-                }
-            }
-        }
-        else
-        {
-            if (IsStaleMate())
-            {
-                //Stalemate
-                return Game.GameState.STALE_MATE;
-            }
-            else
-            {
-                //Live
-                return Game.GameState.ALIVE;
-            }
-        }
-
-        return Game.GameState.INVALID;
     }
 
     public bool CanShortCastle()

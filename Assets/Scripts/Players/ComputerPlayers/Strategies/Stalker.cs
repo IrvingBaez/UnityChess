@@ -2,17 +2,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MaterialGrabber : Strategy
+public class Stalker : Strategy
 {
     private void Start()
     {
-        this.name = "MaterialGrabber";
+        this.name = "Stalker";
     }
 
     public override float Evaluate(Board board)
     {
         this.board = board;
 
-        return FilterCheckMate(Material());
+        return FilterCheckMate(-DistanceToKing());
     }
 }

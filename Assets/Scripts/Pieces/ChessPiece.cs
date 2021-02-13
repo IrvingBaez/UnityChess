@@ -105,6 +105,12 @@ public abstract class ChessPiece
         return this.position;
     }
 
+    public List<Position> GetSight()
+    {
+        SetSight();
+        return this.sight;
+    }
+
     public List<Move> GetMoves()
     {
         SetMoves();

@@ -136,6 +136,11 @@ public class Node<I, C>
         return null;
     }
 
+    public bool IsLeaf()
+    {
+        return children.Count == 0;
+    }
+
     public override string ToString()
     {
         return $"{identifier}: {value}";
