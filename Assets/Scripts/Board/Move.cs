@@ -12,7 +12,7 @@
         this.destiny = destiny;
         this.promoteTo = promoteTo;
         this.isCastling = isCastling;
-        notation = $"{piece.GetSymbol()}{destiny}";
+        notation = $"{piece.GetSymbol().ToString().ToLower()}{destiny}";
     }
 
     public override string ToString()

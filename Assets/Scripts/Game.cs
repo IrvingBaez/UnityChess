@@ -18,10 +18,7 @@ public class Game : MonoBehaviour
     
     private Board board;
     private ChessPlayer currentPlayer;
-    private GameState gameState = GameState.ALIVE;
     private CheckTile checkTile;
-
-    public enum GameState { ALIVE, WHITE_CHECK, WHITE_MATE, BLACK_CHECK, BLACK_MATE, STALE_MATE, INVALID };
 
     void Start()
     {
@@ -49,10 +46,17 @@ public class Game : MonoBehaviour
     private IEnumerator Play()
     {
         print(board.Fen());
-        if (gameState == GameState.ALIVE || gameState == GameState.BLACK_CHECK || gameState == GameState.WHITE_CHECK)
+        switch (board.GetGameState())
         {
-            yield return null;
-            currentPlayer.Move();
+            case Board.GameState.ALIVE:
+            case Board.GameState.BLACK_CHECK:
+            case Board.GameState.WHITE_CHECK:
+                yield return null;
+                currentPlayer.Move();
+                break;
+            default:
+                yield return null;
+                break;
         }
     }
 
@@ -72,50 +76,10 @@ public class Game : MonoBehaviour
 
         if(checkTile != null)
             Destroy(checkTile.gameObject);
-        
-        SetGameState();
 
-        textState.text = gameState.ToString();
+        textState.text = board.GetGameState().ToString();
         textTurn.text = currentPlayer.GetColor().ToString();
 
         StartCoroutine(Play());
-    }
-
-    private void SetGameState()
-    {
-        King king = null;
-
-        switch (currentPlayer.GetColor())
-        {
-            case ChessPiece.Color.WHITE:
-                king = board.GetWhiteKing();
-                break;
-            case ChessPiece.Color.BLACK:
-                king = board.GetBlackKing();
-                break;
-        }
-        
-        gameState = king.GetGameState();
-        
-        if(gameState == GameState.WHITE_CHECK || gameState == GameState.BLACK_CHECK)
-        {
-            OnCheck(king);
-        }
-    }
-
-    private void OnCheck(King victim)
-    {
-        checkTile = Instantiate(checkTileRef);
-        checkTile.Initialize(victim.GetPosition(), boardView);
-
-        switch (victim.GetColor())
-        {
-            case ChessPiece.Color.WHITE:
-                gameState = GameState.BLACK_CHECK;
-                break;
-            case ChessPiece.Color.BLACK:
-                gameState = GameState.WHITE_CHECK;
-                break;
-        }
     }
 }

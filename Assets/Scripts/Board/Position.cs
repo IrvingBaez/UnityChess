@@ -62,8 +62,23 @@ public class Position
         }
     }
 
+    public static float SquareDistance(Position pos1, Position pos2)
+    {
+        float cols = (int)pos1.col - (int)pos2.col;
+        float rows = pos1.row - pos2.row;
+
+        return cols * cols + rows * rows;
+    }
+
     public override string ToString()
     {
         return col + row.ToString();
+    }
+
+    public override bool Equals(object obj)
+    {
+        Position other = obj as Position;
+
+        return other.col == this.col && other.row == this.row;
     }
 }

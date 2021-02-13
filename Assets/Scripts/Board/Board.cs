@@ -1,18 +1,24 @@
 ﻿using System;
+using System.Linq;
+using UnityEngine;
 using System.Collections.Generic;
 
 public class Board
 {
     private ChessPiece[,] positions = new ChessPiece[8, 8];
-    private Position enPassant;
     private ChessPiece.Color turn;
+    private King whiteKing;
+    private King blackKing;
+    private Position enPassant;
     private int halfTurn;
     private int fullTurn;
 
-    private King whiteKing;
-    private King blackKing;
     private List<ChessPiece> whitePieces = new List<ChessPiece>();
     private List<ChessPiece> blackPieces = new List<ChessPiece>();
+
+    private GameState gameState;
+
+    public enum GameState { ALIVE, WHITE_CHECK, WHITE_MATE, BLACK_CHECK, BLACK_MATE, STALE_MATE, INVALID };
 
     public enum Column { A, B, C, D, E, F, G, H };
     public bool isCopy = false;
@@ -20,7 +26,7 @@ public class Board
 
     public Board() : this("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { }
 
-    public Board(string fen)
+    public Board(string fen, bool isCopy = false)
     {
         int index = 0;
 
@@ -151,6 +157,13 @@ public class Board
 
         //Fullmove count
         int.TryParse(fen, out fullTurn);
+
+        this.isCopy = isCopy;
+
+        if (!isCopy)
+        {
+            FindGameState();
+        }
     }
 
     public string Fen()
@@ -247,7 +260,7 @@ public class Board
         }
         else
         {
-            fen += " - ";
+            fen += " -";
         }
 
         fen += $" {halfTurn} {fullTurn}";
@@ -290,11 +303,6 @@ public class Board
 
     public void PerformMove(Move move)
     {
-        if(move.piece.GetColor() != turn)
-        {
-            return;
-        }
-
         Position origin = move.piece.GetPosition();
 
         ChessPiece captured = GetOnPosition(move.destiny);
@@ -367,6 +375,10 @@ public class Board
         }
         
         turn = (ChessPiece.Color)(((int)turn + 1) % 2);
+        if (!isCopy)
+        {
+            FindGameState();
+        }
     }
 
     private void PerformCastling(Move move)
@@ -392,42 +404,119 @@ public class Board
         positions[(int)origin.col, origin.row - 1] = null;
         positions[(int)rookDestiny.col, rookDestiny.row - 1] = rook;
         rook.SetBoardPosition(rookDestiny);
-        //PerformMove(new Move(rook, rookDestiny));
     }
 
     public bool IsValidMove(Move move)
     {
-        if (move.piece.GetColor() != turn || halfTurn > 50)
+        if (halfTurn > 50) { 
+            //Debug.Log("50 half turns have passed.");
+            return false;
+        }
+        
+        if (move.piece.GetColor() != turn)
         {
+            //Debug.Log("Invalid move. Not this color's turn.");
+            return false;
+        }
+
+        if (move.piece.GetPosition() == move.destiny)
+        {
+            //Debug.Log("Invalid move. Piece is already there.");
+            return false;
+        }
+
+        ChessPiece capture = GetOnPosition(move.destiny);
+        if (capture != null && move.piece.GetColor() == capture.GetColor())
+        {
+            //Debug.Log("Invalid move. Capturing same color.");
             return false;
         }
 
         Board copy = CopyAndMove(move);
-        bool valid = true;
+        King king;
 
-        switch (move.piece.GetColor())
+        if (move.piece.GetColor() == ChessPiece.Color.WHITE)
         {
-            case ChessPiece.Color.WHITE:
-                if (copy.whiteKing.IsInCheck())
-                    valid = false;
-                break;
-            case ChessPiece.Color.BLACK:
-                if (copy.blackKing.IsInCheck())
-                    valid = false;
-                break;
+            king = copy.GetWhiteKing();
+        }
+        else
+        {
+            king = copy.GetBlackKing();
         }
 
-        return valid;
+        return !copy.IsInCheck(king);
     }
 
     public Board CopyAndMove(Move move)
     {
-        Board boardCopy = new Board(Fen());
+        Board boardCopy = new Board(Fen(), true);
         ChessPiece movingPiece = boardCopy.GetOnPosition(move.piece.GetPosition());
 
         boardCopy.PerformMove(new Move(movingPiece, move.destiny, move.promoteTo, move.isCastling));
 
         return boardCopy;
+    }
+
+    private void FindGameState()
+    {
+        if (whiteKing == null || blackKing == null)
+        {
+            gameState = GameState.INVALID;
+            return;
+        }
+
+        gameState = GameState.ALIVE;
+
+        if (turn == ChessPiece.Color.WHITE)
+        {
+            if (IsInCheck(blackKing))
+            {
+                gameState = GameState.INVALID;
+                return;
+            }
+
+            if (IsInCheck(whiteKing))
+            {
+                gameState = GameState.BLACK_CHECK;
+                
+                if(NoLegalMoves(whiteKing))
+                {
+                    gameState = GameState.BLACK_MATE;
+                }
+            }
+            else
+            {
+                if (NoLegalMoves(whiteKing))
+                {
+                    gameState = GameState.STALE_MATE;
+                }
+            }
+        }
+        else
+        {
+            if (IsInCheck(whiteKing))
+            {
+                gameState = GameState.INVALID;
+                return;
+            }
+
+            if (IsInCheck(blackKing))
+            {
+                gameState = GameState.WHITE_CHECK;
+
+                if (NoLegalMoves(blackKing))
+                {
+                    gameState = GameState.WHITE_MATE;
+                }
+            }
+            else
+            {
+                if (NoLegalMoves(blackKing))
+                {
+                    gameState = GameState.STALE_MATE;
+                }
+            }
+        }
     }
 
     public ChessPiece GetOnPosition(Position position)
@@ -440,16 +529,79 @@ public class Board
         return positions[(int)position.col, position.row - 1];
     }
 
-    public bool LookFor(ChessPiece.Color color, Type type, Position position)
+    public bool IsInCheck(King king)
     {
-        ChessPiece piece = GetOnPosition(position);
+        List<ChessPiece> pieces;
 
-        if(piece == null)
+        if (king.GetColor() == ChessPiece.Color.WHITE)
+            pieces = blackPieces;
+        else
+            pieces = whitePieces;
+        
+        foreach (ChessPiece piece in pieces)
         {
-            return false;
+            if (piece.GetSight().Contains(king.GetPosition()))
+            {
+                return true;
+            }
         }
+        return false;
+    }
 
-        return type.Equals(piece.GetType()) && piece.GetColor() == color;
+    public bool IsInCheck(ChessPiece.Color color, Position position)
+    {
+        List<ChessPiece> pieces;
+
+        if (color == ChessPiece.Color.WHITE)
+            pieces = blackPieces;
+        else
+            pieces = whitePieces;
+
+        foreach (ChessPiece piece in pieces)
+        {
+            if (piece.GetSight().Contains(position))
+                return true;
+        }
+        return false;
+    }
+
+    public bool NoLegalMoves(King king)
+    {
+        List<ChessPiece> pieces;
+
+        if (king.GetColor() == ChessPiece.Color.WHITE)
+            pieces = whitePieces;
+        else
+            pieces = blackPieces;
+
+        foreach (ChessPiece piece in pieces)
+        {
+            
+            if(piece is Pawn pawn){
+                foreach (Move move in pawn.RawMoves()){
+                    if (IsValidMove(move))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                foreach (Position position in piece.GetSight())
+                {
+                    if (IsValidMove(new Move(piece, position)))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    public GameState GetGameState()
+    {
+        return gameState;
     }
 
     public King GetWhiteKing()
