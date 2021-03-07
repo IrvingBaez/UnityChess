@@ -1,37 +1,109 @@
 ﻿using System;
-using System.Linq;
-using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 public class Board
 {
-    private ChessPiece[,] positions = new ChessPiece[8, 8];
-    private ChessPiece.Color turn;
-    private King whiteKing;
-    private King blackKing;
-    private Position enPassant;
+    public GameState State { get; private set; }
+
+    public Position WhiteKing { get; private set; }
+
+    public Position BlackKing { get; private set; }
+
+    public List<Position> WhitePieces { get; private set; } = new List<Position>();
+
+    public List<Position> BlackPieces { get; private set; } = new List<Position>();
+
+    public List<Position> WhiteSight { get; private set; }
+
+    public List<Position> BlackSight { get; private set; }
+
+    public int Turn { get; private set; }
+
+    private char?[,] tiles = new char?[8, 8];
     private int halfTurn;
     private int fullTurn;
+    private Position enPassant;
+    private bool isCopy;
+    private bool[] whiteCastling = new bool[] { false, false };
+    private bool[] blackCastling = new bool[] { false, false };
+    public static char[] whiteSymbols = new char[] { 'K', 'Q', 'R', 'B', 'N', 'B', 'P' };
+    public static char[] blackSymbols = new char[] { 'k', 'q', 'r', 'b', 'n', 'b', 'p' };
 
-    private List<ChessPiece> whitePieces = new List<ChessPiece>();
-    private List<ChessPiece> blackPieces = new List<ChessPiece>();
+    public enum GameState { UNDEFINED, ALIVE, CHECK_TO_WHITE, CHECK_TO_BLACK, CHECKMATE_TO_WHITE, CHECKMATE_TO_BLACK, STALEMATE, INVALID };
 
-    private GameState gameState;
-
-    public enum GameState { ALIVE, WHITE_CHECK, WHITE_MATE, BLACK_CHECK, BLACK_MATE, STALE_MATE, INVALID };
-
-    public enum Column { A, B, C, D, E, F, G, H };
-    public bool isCopy = false;
-
-
-    public Board() : this("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") { }
-
-    public Board(string fen, bool isCopy = false)
+    public class Position : IEquatable<Position>
     {
+        public int col;
+        public int row;
+
+        private Position(int col, int row)
+        {
+            this.col = col;
+            this.row = row;
+        }
+
+        public Position Clone()
+        {
+            return new Position(col, row);
+        }
+
+        public static Position Create(int col, int row)
+        {
+            if(0 <= col && col <= 7 && 0 <= row && row <= 7)
+            {
+                return new Position(col, row);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"[{col}, {row}]";
+        }
+
+        public bool Equals(Position other)
+        {
+            return other != null && col == other.col && row == other.row;
+        }
+
+        public override bool Equals(object obj) => Equals(obj as Position);
+        public override int GetHashCode() => (col, row).GetHashCode();
+    }
+
+    public class Move
+    {
+        public Position origin;
+        public Position destiny;
+        public char? promotion;
+
+        internal Move(Position origin, Position destiny, char? promotion = null)
+        {
+            this.origin = origin;
+            this.destiny = destiny;
+            this.promotion = promotion;
+        }
+
+        public override string ToString()
+        {
+            return $"From {origin} to {destiny}";
+        }
+
+        public static Move sampleMove = new Move(Position.Create(0, 6), Position.Create(0, 5));
+    }
+
+    public Board(){}
+
+    public Board(string fen)
+    {
+        this.isCopy = false;
         int index = 0;
 
         //board
-        while(fen[0] != ' ')
+        while (fen[0] != ' ')
         {
             int leap;
 
@@ -41,51 +113,28 @@ public class Board
             }
             else
             {
-                if(fen[0] != '/')
+                if (fen[0] != '/')
                 {
-                    ChessPiece piece = null;
-                    
-                    switch (fen[0])
-                    {
-                        case 'K':
-                            piece = new King(IntToPosition(index), ChessPiece.Color.WHITE, this);
-                            break;
-                        case 'Q':
-                            piece = new Queen(IntToPosition(index), ChessPiece.Color.WHITE, this);
-                            break;
-                        case 'R':
-                            piece = new Rook(IntToPosition(index), ChessPiece.Color.WHITE, this);
-                            break;
-                        case 'B':
-                            piece = new Bishop(IntToPosition(index), ChessPiece.Color.WHITE, this);
-                            break;
-                        case 'N':
-                            piece = new Knight(IntToPosition(index), ChessPiece.Color.WHITE, this);
-                            break;
-                        case 'P':
-                            piece = new Pawn(IntToPosition(index), ChessPiece.Color.WHITE, this);
-                            break;
-                        case 'k':
-                            piece = new King(IntToPosition(index), ChessPiece.Color.BLACK, this);
-                            break;
-                        case 'q':
-                            piece = new Queen(IntToPosition(index), ChessPiece.Color.BLACK, this);
-                            break;
-                        case 'r':
-                            piece = new Rook(IntToPosition(index), ChessPiece.Color.BLACK, this);
-                            break;
-                        case 'b':
-                            piece = new Bishop(IntToPosition(index), ChessPiece.Color.BLACK, this);
-                            break;
-                        case 'n':
-                            piece = new Knight(IntToPosition(index), ChessPiece.Color.BLACK, this);
-                            break;
-                        case 'p':
-                            piece = new Pawn(IntToPosition(index), ChessPiece.Color.BLACK, this);
-                            break;
-                    }
+                    tiles[index % 8, index / 8] = fen[0];
 
-                    AddPiece(piece);
+                    //Save pieces and kings positions
+                    if (whiteSymbols.Contains(fen[0]))
+                    {
+                        WhitePieces.Add(Position.Create(index % 8, index / 8));
+                        if(fen[0] == 'K')
+                        {
+                            WhiteKing = Position.Create(index % 8, index / 8);
+                        }
+                    }
+                    else
+                    {
+                        BlackPieces.Add(Position.Create(index % 8, index / 8));
+                        if (fen[0] == 'k')
+                        {
+                            BlackKing = Position.Create(index % 8, index / 8);
+                        }
+                    }
+                    
                     index++;
                 }
             }
@@ -95,75 +144,58 @@ public class Board
 
         //turn
         fen = fen.Substring(1);
-        switch (fen[0])
-        {
-            case 'w':
-                turn = ChessPiece.Color.WHITE;
-                break;
-            case 'b':
-                turn = ChessPiece.Color.BLACK;
-                break;
-            default:
-                return;
-        }
+        Turn = fen[0] == 'w' ? 1 : -1;
+
         fen = fen.Substring(1);
 
         //castling rights
         fen = fen.Substring(1);
-        whiteKing.RemoveCastlingRights();
-        blackKing.RemoveCastlingRights();
-        
         while (fen[0] != ' ')
         {
             switch (fen[0])
             {
                 case 'K':
-                    whiteKing.SetShortCastlingRight(true);
+                    whiteCastling[1] = true;
                     break;
                 case 'Q':
-                    whiteKing.SetLongCastlingRight(true);
+                    whiteCastling[0] = true;
                     break;
                 case 'k':
-                    blackKing.SetShortCastlingRight(true);
+                    blackCastling[1] = true;
                     break;
                 case 'q':
-                    blackKing.SetLongCastlingRight(true);
+                    blackCastling[0] = true;
                     break;
             }
-
             fen = fen.Substring(1);
         }
 
         //En passant
         fen = fen.Substring(1);
-        if(fen[0] != '-')
+        if (fen[0] != '-')
         {
-            enPassant = Position.StringToPosition(fen.Substring(0,2));
+            int.TryParse(fen[1].ToString(), out int col);
+            enPassant = Position.Create((int)fen[0] - 97, col - 1);
             fen = fen.Substring(1);
         }
         fen = fen.Substring(2);
 
         //Halfmove count
-        if(fen[1] == ' ')
+        if (fen[1] == ' ')
         {
             int.TryParse(fen[0].ToString(), out halfTurn);
             fen = fen.Substring(2);
         }
         else
         {
-            int.TryParse(fen.Substring(1,2), out halfTurn);
+            int.TryParse(fen.Substring(1, 2), out halfTurn);
             fen = fen.Substring(3);
         }
 
         //Fullmove count
         int.TryParse(fen, out fullTurn);
 
-        this.isCopy = isCopy;
-
-        if (!isCopy)
-        {
-            FindGameState();
-        }
+        FindGameState();
     }
 
     public string Fen()
@@ -171,79 +203,68 @@ public class Board
         string fen = "";
         int freeSpaces = 0;
 
-        for (int i = 0; i < 64; i++)
+        for (int row = 0; row < 8; row++)
         {
-            ChessPiece piece = GetOnPosition(IntToPosition(i));
-
-            if (piece == null)
+            for(int col = 0; col < 8; col++)
             {
-                freeSpaces++;
-            }
-            else
-            {
-                if(freeSpaces > 0)
+                if(tiles[col, row] == null)
                 {
-                    fen += freeSpaces;
-                    freeSpaces = 0;
+                    freeSpaces++;
                 }
-
-                switch (piece.GetColor())
+                else
                 {
-                    case ChessPiece.Color.WHITE:
-                        fen += piece.GetSymbol().ToString();
-                        break;
-                    case ChessPiece.Color.BLACK:
-                        fen += piece.GetSymbol().ToString().ToLower();
-                        break;
+                    if (freeSpaces > 0)
+                    {
+                        fen += freeSpaces;
+                        freeSpaces = 0;
+                    }
+                    fen += tiles[col, row];
                 }
             }
 
-            if((i + 1) % 8 == 0)
+            if (freeSpaces > 0)
             {
-                if (freeSpaces > 0)
-                {
-                    fen += freeSpaces;
-                    freeSpaces = 0;
-                }
+                fen += freeSpaces;
+                freeSpaces = 0;
+            }
 
-                if(i < 63)
-                {
-                    fen += "/";
-                }
+            if(row < 7)
+            {
+                fen += "/";
             }
         }
 
-        switch (turn)
+        switch (Turn)
         {
-            case ChessPiece.Color.WHITE:
+            case 1:
                 fen += " w ";
                 break;
-            case ChessPiece.Color.BLACK:
+            case -1:
                 fen += " b ";
                 break;
         }
 
         bool castling = false;
 
-        if (whiteKing.CanShortCastle())
+        if (whiteCastling[1])
         {
             fen += "K";
             castling = true;
         }
 
-        if (whiteKing.CanLongCastle())
-        { 
-            fen += "Q"; 
+        if (whiteCastling[0])
+        {
+            fen += "Q";
             castling = true;
         }
 
-        if (blackKing.CanShortCastle())
+        if (blackCastling[1])
         {
             fen += "k";
             castling = true;
         }
 
-        if (blackKing.CanLongCastle())
+        if (blackCastling[0])
         {
             fen += "q";
             castling = true;
@@ -254,407 +275,743 @@ public class Board
             fen += "-";
         }
 
-        if(enPassant != null)
+        if (enPassant != null)
         {
-            fen += $" {enPassant.ToString().ToLower()} ";
+            fen += $" {(char)(enPassant.col + 97)}{enPassant.row + 1} ";
         }
         else
         {
-            fen += " -";
+            fen += " - ";
         }
 
-        fen += $" {halfTurn} {fullTurn}";
+        fen += $"{halfTurn} {fullTurn}";
 
         return fen;
     }
 
-    private Position IntToPosition(int index)
-    {
-        return new Position((Board.Column)(index % 8), 8 - (int)(index / 8));
-    }
-
-    public void AddPiece(ChessPiece piece)
-    {
-        ChessPiece captured = GetOnPosition(piece.GetPosition());
-
-        if (captured != null)
-        {
-            whitePieces.Remove(captured);
-            blackPieces.Remove(captured);
-            positions[(int)captured.GetPosition().col, captured.GetPosition().row - 1] = null;
-        }
-
-        switch (piece.GetColor())
-        {
-            case ChessPiece.Color.WHITE:
-                whitePieces.Add(piece);
-                if (piece is King)
-                    whiteKing = piece as King;
-                break;
-            case ChessPiece.Color.BLACK:
-                blackPieces.Add(piece);
-                if (piece is King)
-                    blackKing = piece as King;
-                break;
-        }
-
-        positions[(int)piece.GetPosition().col, piece.GetPosition().row - 1] = piece;
-    }
-
     public void PerformMove(Move move)
     {
-        Position origin = move.piece.GetPosition();
+        WhiteSight = null;
+        BlackSight = null;
 
-        ChessPiece captured = GetOnPosition(move.destiny);
+        char? moving = GetOnPosition(move.origin);
+        char? captured = GetOnPosition(move.destiny);
+
+        // Forget captured piece
         if (captured != null)
         {
             halfTurn = -1;
 
-            whitePieces.Remove(captured);
-            blackPieces.Remove(captured);
-            positions[(int)captured.GetPosition().col, captured.GetPosition().row - 1] = null;
+            WhitePieces.Remove(move.destiny);
+            BlackPieces.Remove(move.destiny);
         }
 
-        if(move.piece is King)
+        // Manage castling on capture
+        if (captured == 'R')
         {
-            if (move.isCastling)
+            if (move.destiny.col == 0)
             {
-                PerformCastling(move);
+                whiteCastling[0] = false;
             }
-            (move.piece as King).RemoveCastlingRights();
-        }
-
-        if(move.piece is Rook)
-        {
-            Rook rook = move.piece as Rook;
-            switch (rook.GetColor())
+            else if (move.destiny.col == 7)
             {
-                case ChessPiece.Color.WHITE:
-                    whiteKing.RemoveCastlingRights(rook);
-                    break;
-                case ChessPiece.Color.BLACK:
-                    blackKing.RemoveCastlingRights(rook);
-                    break;
+                whiteCastling[1] = false;
             }
         }
+        else if (captured == 'r')
+        {
+            if (move.destiny.col == 0)
+            {
+                blackCastling[0] = false;
+            }
+            else if (move.destiny.col == 7)
+            {
+                blackCastling[1] = false;
+            }
+        }
 
-        if (move.piece is Pawn)
+        // Manage castling on move
+        if (moving == 'R')
+        {
+            if (move.origin.Equals(Position.Create(0, 7)))
+            {
+                whiteCastling[0] = false;
+            }
+            else if (move.origin.Equals(Position.Create(7, 7)))
+            {
+                whiteCastling[1] = false;
+            }
+        }
+        else if (moving == 'r')
+        {
+            if (move.origin.Equals(Position.Create(0, 0)))
+            {
+                blackCastling[0] = false;
+            }
+            else if (move.origin.Equals(Position.Create(7, 0)))
+            {
+                blackCastling[1] = false;
+            }
+        }
+
+        // detect and perform castling
+        if (moving == 'K')
+        {
+            if (whiteCastling[0] && move.destiny.col == 2)
+            {
+                tiles[0, 7] = null;
+                tiles[3, 7] = 'R';
+            }
+            else if (whiteCastling[1] && move.destiny.col == 6)
+            {
+                tiles[7, 7] = null;
+                tiles[5, 7] = 'R';
+            }
+            whiteCastling = new bool[] { false, false };
+        }
+        else if (moving == 'k')
+        {
+            if (blackCastling[0] && move.destiny.col == 2)
+            {
+                tiles[0, 0] = null;
+                tiles[3, 0] = 'r';
+            }
+            else if (blackCastling[1] && move.destiny.col == 6)
+            {
+                tiles[7, 0] = null;
+                tiles[5, 0] = 'r';
+            }
+            blackCastling = new bool[] { false, false };
+        }
+
+        // detect pawn
+        if (moving == 'P' || moving == 'p')
         {
             halfTurn = -1;
-
-            if(move.destiny.row == 8 || move.destiny.row == 1)
+            int color = GetPieceColor(move.origin);
+            if (move.destiny.Equals(enPassant))
             {
-                Pawn pawn = (Pawn)move.piece;
-                Queen queen = new Queen(pawn.GetPosition(), pawn.GetColor(), this);
+                tiles[enPassant.col, enPassant.row - color] = null;
+            }
 
-                switch (move.piece.GetColor())
-                {
-                    case ChessPiece.Color.WHITE:
-                        whitePieces.Remove(move.piece);
-                        whitePieces.Add(queen);
-                        break;
-                    case ChessPiece.Color.BLACK:
-                        blackPieces.Remove(move.piece);
-                        blackPieces.Add(queen);
-                        break;
-                }
-                positions[(int)pawn.GetPosition().col, pawn.GetPosition().row - 1] = null;
-                move.piece = queen;
+            if (Math.Abs(move.origin.row - move.destiny.row) == 2)
+            {
+                enPassant = Position.Create(move.destiny.col, move.destiny.row + color);
+            }
+            else
+            {
+                enPassant = null;
             }
         }
-
-        positions[(int)origin.col, origin.row - 1] = null;
-        positions[(int)move.destiny.col, move.destiny.row - 1] = move.piece;
-        move.piece.SetBoardPosition(move.destiny);
-        
-        halfTurn++;
-
-        if(turn == ChessPiece.Color.BLACK)
+        else
         {
-            fullTurn++;
+            enPassant = null;
         }
-        
-        turn = (ChessPiece.Color)(((int)turn + 1) % 2);
+
+        tiles[move.origin.col, move.origin.row] = null;
+        tiles[move.destiny.col, move.destiny.row] = move.promotion == null ? moving : move.promotion;
+
+        if (moving == 'K')
+            WhiteKing = move.destiny;
+        if (moving == 'k')
+            BlackKing = move.destiny;
+
+        List<Position> changing = char.IsUpper(moving.Value) ? WhitePieces : BlackPieces;
+        changing.Remove(move.origin);
+        changing.Add(move.destiny);
+
+        halfTurn++;
+        fullTurn += (-Turn + 1) / 2;
+        Turn = -Turn;
+
         if (!isCopy)
         {
             FindGameState();
         }
     }
 
-    private void PerformCastling(Move move)
-    {
-        Rook rook = null;
-        Position rookDestiny = null;
-
-        switch (move.destiny.col)
-        {
-            case Column.C:
-                rook = (Rook)GetOnPosition(new Position(move.destiny.col - 2, move.destiny.row));
-                rookDestiny = new Position(move.destiny.col + 1, move.destiny.row);
-
-                break;
-            case Column.G:
-                rook = (Rook)GetOnPosition(new Position(move.destiny.col + 1, move.destiny.row));
-                rookDestiny = new Position(move.destiny.col - 1, move.destiny.row);
-                break;
-        }
-
-        Position origin = rook.GetPosition();
-
-        positions[(int)origin.col, origin.row - 1] = null;
-        positions[(int)rookDestiny.col, rookDestiny.row - 1] = rook;
-        rook.SetBoardPosition(rookDestiny);
-    }
-
-    public bool IsValidMove(Move move)
-    {
-        if (halfTurn > 50) { 
-            //Debug.Log("50 half turns have passed.");
-            return false;
-        }
-        
-        if (move.piece.GetColor() != turn)
-        {
-            //Debug.Log("Invalid move. Not this color's turn.");
-            return false;
-        }
-
-        if (move.piece.GetPosition() == move.destiny)
-        {
-            //Debug.Log("Invalid move. Piece is already there.");
-            return false;
-        }
-
-        ChessPiece capture = GetOnPosition(move.destiny);
-        if (capture != null && move.piece.GetColor() == capture.GetColor())
-        {
-            //Debug.Log("Invalid move. Capturing same color.");
-            return false;
-        }
-
-        Board copy = CopyAndMove(move);
-        King king;
-
-        if (move.piece.GetColor() == ChessPiece.Color.WHITE)
-        {
-            king = copy.GetWhiteKing();
-        }
-        else
-        {
-            king = copy.GetBlackKing();
-        }
-
-        return !copy.IsInCheck(king);
-    }
-
     public Board CopyAndMove(Move move)
     {
-        Board boardCopy = new Board(Fen(), true);
-        ChessPiece movingPiece = boardCopy.GetOnPosition(move.piece.GetPosition());
-
-        boardCopy.PerformMove(new Move(movingPiece, move.destiny, move.promoteTo, move.isCastling));
+        Board boardCopy = new Board();
+        boardCopy.Turn = Turn;
+        boardCopy.tiles = tiles.Clone() as char?[,];
+        boardCopy.enPassant = enPassant?.Clone();
+        boardCopy.WhiteKing = WhiteKing.Clone();
+        boardCopy.BlackKing = BlackKing.Clone();
+        boardCopy.WhitePieces = WhitePieces.Select(item => (Position)item.Clone()).ToList();
+        boardCopy.BlackPieces = BlackPieces.Select(item => (Position)item.Clone()).ToList();
+        boardCopy.whiteCastling = new bool[] { whiteCastling[0], whiteCastling[1] };
+        boardCopy.blackCastling = new bool[] { blackCastling[0], blackCastling[1] };
+        boardCopy.WhiteSight = null;
+        boardCopy.isCopy = true;
+        boardCopy.PerformMove(move);
 
         return boardCopy;
     }
 
+    private bool IsValidMove(Move move)
+    {
+        Board copy = CopyAndMove(move);
+        copy.FindSight();
+        
+        Position king = char.IsUpper(GetOnPosition(move.origin).Value) ? copy.WhiteKing : copy.BlackKing;
+        List<Position> sight = char.IsUpper(GetOnPosition(move.origin).Value) ? copy.BlackSight : copy.WhiteSight;
+
+        return !sight.Contains(king);
+    }
+
+    private void FindSight()
+    {
+        WhiteSight = new List<Position>();
+        BlackSight = new List<Position>();
+
+        foreach(Position position in WhitePieces)
+        {
+            WhiteSight = WhiteSight.Union(FindSight(position)).ToList();
+        }
+
+        foreach (Position position in BlackPieces)
+        {
+            BlackSight = BlackSight.Union(FindSight(position)).ToList();
+        }
+    }
+
+    private List<Position> FindSight(Position position)
+    {
+        switch (GetOnPosition(position))
+        {
+            case 'K':
+            case 'k':
+                return KingSight(position);
+            case 'Q':
+            case 'q':
+                return QueenSight(position);
+            case 'R':
+            case 'r':
+                return RookSight(position);
+            case 'B':
+            case 'b':
+                return BishopSight(position);
+            case 'N':
+            case 'n':
+                return KnightSight(position);
+            case 'P':
+            case 'p':
+                return PawnSight(position);
+            default:
+                return new List<Position>();
+        }
+    }
+
+    private List<Position> KingSight(Position position)
+    {
+        List<Position> kingSight = new List<Position>();
+
+        for (int i = -1; i <= 1; i++)
+        {
+            for (int j = -1; j <= 1; j++)
+            {
+                if (j == 0 && i == 0)
+                    continue;
+                Position positionInSight = Position.Create(position.col + i, position.row + j);
+                if (positionInSight != null)
+                    kingSight.Add(positionInSight);
+            }
+        }
+
+        return kingSight;
+    }
+
+    private List<Position> QueenSight(Position position)
+    {
+        return RookSight(position).Concat(BishopSight(position)).ToList();
+    }
+
+    private List<Position> RookSight(Position position)
+    {
+        List<Position> rookSight = new List<Position>();
+        Position checking;
+
+        for(int i = 1; i <= 7; i++)
+        {
+            checking = Position.Create(position.col, position.row + i);
+            if (checking != null)
+            {
+                rookSight.Add(checking);
+                if(GetOnPosition(checking) != null)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int i = 1; i <= 7; i++)
+        {
+            checking = Position.Create(position.col, position.row - i);
+            if (checking != null)
+            {
+                rookSight.Add(checking);
+                if (GetOnPosition(checking) != null)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int i = 1; i <= 7; i++)
+        {
+            checking = Position.Create(position.col + i, position.row);
+            if (checking != null)
+            {
+                rookSight.Add(checking);
+                if (GetOnPosition(checking) != null)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int i = 1; i <= 7; i++)
+        {
+            checking = Position.Create(position.col - i, position.row);
+            if (checking != null)
+            {
+                rookSight.Add(checking);
+                if (GetOnPosition(checking) != null)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return rookSight;
+    }
+
+    private List<Position> BishopSight(Position position)
+    {
+        List<Position> bishopSight = new List<Position>();
+
+        Position checking;
+
+        for (int i = 1; i <= 7; i++)
+        {
+            checking = Position.Create(position.col + i, position.row + i);
+            if (checking != null)
+            {
+                bishopSight.Add(checking);
+                if (GetOnPosition(checking) != null)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int i = 1; i <= 7; i++)
+        {
+            checking = Position.Create(position.col - i, position.row - i);
+            if (checking != null)
+            {
+                bishopSight.Add(checking);
+                if (GetOnPosition(checking) != null)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int i = 1; i <= 7; i++)
+        {
+            checking = Position.Create(position.col + i, position.row - i);
+            if (checking != null)
+            {
+                bishopSight.Add(checking);
+                if (GetOnPosition(checking) != null)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int i = 1; i <= 7; i++)
+        {
+            checking = Position.Create(position.col - i, position.row + i);
+            if (checking != null)
+            {
+                bishopSight.Add(checking);
+                if (GetOnPosition(checking) != null)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return bishopSight;
+    }
+
+    private List<Position> KnightSight(Position position)
+    {
+        List<Position> knightSight = new List<Position>();
+        Position checking;
+
+        int[] skips = new int[] { -2, -1, 1, 2 };
+        
+        foreach (int i in skips){
+            foreach(int j in skips)
+            {
+                if((i + j) % 2 != 0)
+                {
+                    checking = Position.Create(position.col + i, position.row + j);
+                    if (checking != null)
+                        knightSight.Add(checking);
+                }
+            }
+        }
+
+        return knightSight;
+    }
+
+    private List<Position> PawnSight(Position position)
+    {
+        List<Position> pawnSight = new List<Position>();
+        Position checking;
+
+        int color = -GetPieceColor(position);
+        
+        checking = Position.Create(position.col - 1, position.row + color);
+        if (checking != null)
+            pawnSight.Add(checking);
+
+        checking = Position.Create(position.col + 1, position.row + color);
+        if (checking != null)
+            pawnSight.Add(checking);
+
+        return pawnSight;
+    }
+
+    public List<Move> LegalMoves(Position position)
+    {
+        if(GetPieceColor(position) != Turn)
+        {
+            return new List<Move>();
+        }
+
+        if (WhiteSight == null || BlackSight == null)
+            FindSight();
+
+        switch (GetOnPosition(position))
+        {
+            case 'K':
+            case 'k':
+                return KingMoves(position);
+            case 'Q':
+            case 'q':
+                return QueenMoves(position);
+            case 'R':
+            case 'r':
+                return RookMoves(position);
+            case 'B':
+            case 'b':
+                return BishopMoves(position);
+            case 'N':
+            case 'n':
+                return KnightMoves(position);
+            case 'P':
+            case 'p':
+                return PawnMoves(position);
+            default:
+                return new List<Move>();
+        }
+    }
+
+    private List<Move> KingMoves(Position position)
+    {
+        List<Move> kingMoves = new List<Move>();
+
+        List<Position> partners = char.IsUpper(GetOnPosition(position).Value) ? WhitePieces : BlackPieces;
+        List<Position> opponentSight = char.IsUpper(GetOnPosition(position).Value) ? BlackSight : WhiteSight;
+        bool[] castlig = char.IsUpper(GetOnPosition(position).Value) ? whiteCastling : blackCastling;
+
+        foreach (Position checking in KingSight(position))
+        {
+            if (!opponentSight.Contains(checking) && !partners.Contains(checking))
+            {
+                kingMoves.Add(new Move(position, checking));
+            }
+        }
+
+        if (castlig[0] &&
+            !partners.Contains(Position.Create(position.col - 1, position.row)) &&
+            !partners.Contains(Position.Create(position.col - 2, position.row)) &&
+            !partners.Contains(Position.Create(position.col - 3, position.row)) &&
+            !opponentSight.Contains(Position.Create(position.col - 1, position.row)) &&
+            !opponentSight.Contains(Position.Create(position.col - 2, position.row))
+            )
+        {
+            kingMoves.Add(new Move(position, Position.Create(position.col - 2, position.row)));
+        }
+
+        if (castlig[1] &&
+            !partners.Contains(Position.Create(position.col + 1, position.row)) &&
+            !partners.Contains(Position.Create(position.col + 2, position.row)) &&
+            !opponentSight.Contains(Position.Create(position.col + 1, position.row)) &&
+            !opponentSight.Contains(Position.Create(position.col + 2, position.row))
+            )
+        {
+            kingMoves.Add(new Move(position, Position.Create(position.col + 2, position.row)));
+        }
+
+        return kingMoves;
+    }
+
+    private List<Move> QueenMoves(Position position)
+    {
+        List<Move> queenMoves = new List<Move>();
+
+        List<Position> partners = char.IsUpper(GetOnPosition(position).Value) ? WhitePieces : BlackPieces;
+
+        foreach (Position checking in QueenSight(position))
+        {
+            if (!partners.Contains(checking))
+            {
+                Move move = new Move(position, checking);
+                if(IsValidMove(move))
+                    queenMoves.Add(move);
+            }
+        }
+
+        return queenMoves;
+    }
+
+    private List<Move> RookMoves(Position position)
+    {
+        List<Move> rookMoves = new List<Move>();
+
+        List<Position> partners = char.IsUpper(GetOnPosition(position).Value) ? WhitePieces : BlackPieces;
+
+        foreach (Position checking in RookSight(position))
+        {
+            if (!partners.Contains(checking))
+            {
+                Move move = new Move(position, checking);
+                if (IsValidMove(move))
+                    rookMoves.Add(move);
+            }
+        }
+
+        return rookMoves;
+    }
+
+    private List<Move> BishopMoves(Position position)
+    {
+        List<Move> bishopMoves = new List<Move>();
+
+        List<Position> partners = char.IsUpper(GetOnPosition(position).Value) ? WhitePieces : BlackPieces;
+
+        foreach (Position checking in BishopSight(position))
+        {
+            if (!partners.Contains(checking))
+            {
+                Move move = new Move(position, checking);
+                if (IsValidMove(move))
+                    bishopMoves.Add(move);
+            }
+        }
+
+        return bishopMoves;
+    }
+
+    private List<Move> KnightMoves(Position position)
+    {
+        List<Move> knightMoves = new List<Move>();
+
+        List<Position> partners = char.IsUpper(GetOnPosition(position).Value) ? WhitePieces : BlackPieces;
+
+        foreach (Position checking in KnightSight(position))
+        {
+            if (!partners.Contains(checking))
+            {
+                Move move = new Move(position, checking);
+                if (IsValidMove(move))
+                    knightMoves.Add(move);
+            }
+        }
+
+        return knightMoves;
+    }
+
+    private List<Move> PawnMoves(Position position)
+    {
+        List<Move> pawnMoves = new List<Move>();
+
+        //Captures and en passant
+        List<Position> opponents = char.IsUpper(GetOnPosition(position).Value) ? BlackPieces : WhitePieces;
+        foreach (Position checking in PawnSight(position))
+        {
+            if (opponents.Contains(checking) || checking.Equals(enPassant))
+            {
+                Move move = new Move(position, checking);
+                if (IsValidMove(move))
+                {
+                    if (checking.row == 0)
+                    {
+                        pawnMoves.Add(new Move(position, checking, 'Q'));
+                        pawnMoves.Add(new Move(position, checking, 'R'));
+                        pawnMoves.Add(new Move(position, checking, 'B'));
+                        pawnMoves.Add(new Move(position, checking, 'N'));
+                    }
+                    else if (checking.row == 7)
+                    {
+                        pawnMoves.Add(new Move(position, checking, 'q'));
+                        pawnMoves.Add(new Move(position, checking, 'r'));
+                        pawnMoves.Add(new Move(position, checking, 'b'));
+                        pawnMoves.Add(new Move(position, checking, 'n'));
+                    }
+                    else
+                    {
+                        pawnMoves.Add(move);
+                    }
+                }
+            }
+        }
+
+        //Steps, double steps and promotions
+        int step = -GetPieceColor(position);
+        Position forward = Position.Create(position.col, position.row + step);
+        
+        if(forward != null && GetOnPosition(forward) == null)
+        {
+            Move move = new Move(position, forward);
+            if(IsValidMove(move))
+            {
+                if (forward.row == 0)
+                {
+                    pawnMoves.Add(new Move(position, forward, 'Q'));
+                    pawnMoves.Add(new Move(position, forward, 'R'));
+                    pawnMoves.Add(new Move(position, forward, 'B'));
+                    pawnMoves.Add(new Move(position, forward, 'N'));
+                }
+                else if (forward.row == 7)
+                {
+                    pawnMoves.Add(new Move(position, forward, 'q'));
+                    pawnMoves.Add(new Move(position, forward, 'r'));
+                    pawnMoves.Add(new Move(position, forward, 'b'));
+                    pawnMoves.Add(new Move(position, forward, 'n'));
+                }
+                else
+                {
+                    pawnMoves.Add(move);
+                }
+            }
+
+            if (position.row == (1 - step) * 2.5 + 1)
+            {
+                forward = Position.Create(position.col, position.row + 2 * step);
+                if (forward != null && GetOnPosition(forward) == null)
+                {
+                    move = new Move(position, forward);
+                    if (IsValidMove(move))
+                        pawnMoves.Add(move);
+                }
+            }
+        }
+
+        return pawnMoves;
+    }
+
+    private bool AnyLegalMoves()
+    {
+        List<Position> pieces = Turn > 0 ? WhitePieces : BlackPieces;
+
+        foreach (Position piece in pieces)
+        {
+            if(LegalMoves(piece).Count > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void FindGameState()
     {
-        if (whiteKing == null || blackKing == null)
+        FindSight();
+        Position king = Turn > 0 ? WhiteKing : BlackKing;
+        List<Position> enemySight = Turn > 0 ? BlackSight : WhiteSight;
+
+        if (enemySight.Contains(king))
         {
-            gameState = GameState.INVALID;
+            State = Turn > 0 ? GameState.CHECK_TO_WHITE : GameState.CHECK_TO_BLACK;
+            if (!AnyLegalMoves())
+            {
+                State = Turn > 0 ? GameState.CHECKMATE_TO_WHITE : GameState.CHECKMATE_TO_BLACK;
+                return;
+            }
+            return;
+        }
+        
+        if (!AnyLegalMoves())
+        {
+            State = GameState.STALEMATE;
             return;
         }
 
-        gameState = GameState.ALIVE;
-
-        if (turn == ChessPiece.Color.WHITE)
-        {
-            if (IsInCheck(blackKing))
-            {
-                gameState = GameState.INVALID;
-                return;
-            }
-
-            if (IsInCheck(whiteKing))
-            {
-                gameState = GameState.BLACK_CHECK;
-                
-                if(NoLegalMoves(whiteKing))
-                {
-                    gameState = GameState.BLACK_MATE;
-                }
-            }
-            else
-            {
-                if (NoLegalMoves(whiteKing))
-                {
-                    gameState = GameState.STALE_MATE;
-                }
-            }
-        }
-        else
-        {
-            if (IsInCheck(whiteKing))
-            {
-                gameState = GameState.INVALID;
-                return;
-            }
-
-            if (IsInCheck(blackKing))
-            {
-                gameState = GameState.WHITE_CHECK;
-
-                if (NoLegalMoves(blackKing))
-                {
-                    gameState = GameState.WHITE_MATE;
-                }
-            }
-            else
-            {
-                if (NoLegalMoves(blackKing))
-                {
-                    gameState = GameState.STALE_MATE;
-                }
-            }
-        }
+        State = GameState.ALIVE;
     }
 
-    public ChessPiece GetOnPosition(Position position)
+    public char? GetOnPosition(Position position)
     {
-        if (position.row < 1 || position.row > 8 || (int)position.col < 0 || (int)position.col > 7)
-        {
-            return null;
-        }
-
-        return positions[(int)position.col, position.row - 1];
+        return tiles[position.col, position.row];
     }
 
-    public bool IsInCheck(King king)
+    public int GetPieceColor(Position position)
     {
-        List<ChessPiece> pieces;
-
-        if (king.GetColor() == ChessPiece.Color.WHITE)
-            pieces = blackPieces;
-        else
-            pieces = whitePieces;
-        
-        foreach (ChessPiece piece in pieces)
-        {
-            if (piece.GetSight().Contains(king.GetPosition()))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public bool IsInCheck(ChessPiece.Color color, Position position)
-    {
-        List<ChessPiece> pieces;
-
-        if (color == ChessPiece.Color.WHITE)
-            pieces = blackPieces;
-        else
-            pieces = whitePieces;
-
-        foreach (ChessPiece piece in pieces)
-        {
-            if (piece.GetSight().Contains(position))
-                return true;
-        }
-        return false;
-    }
-
-    public bool NoLegalMoves(King king)
-    {
-        List<ChessPiece> pieces;
-
-        if (king.GetColor() == ChessPiece.Color.WHITE)
-            pieces = whitePieces;
-        else
-            pieces = blackPieces;
-
-        foreach (ChessPiece piece in pieces)
-        {
-            
-            if(piece is Pawn pawn){
-                foreach (Move move in pawn.RawMoves()){
-                    if (IsValidMove(move))
-                    {
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                foreach (Position position in piece.GetSight())
-                {
-                    if (IsValidMove(new Move(piece, position)))
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    public GameState GetGameState()
-    {
-        return gameState;
-    }
-
-    public King GetWhiteKing()
-    {
-        return whiteKing;
-    }
-
-    public King GetBlackKing()
-    {
-        return blackKing;
-    }
-
-    public List<ChessPiece> GetWhitePieces()
-    {
-        return whitePieces;
-    }
-
-    public List<ChessPiece> GetBlackPieces()
-    {
-        return blackPieces;
-    }
-
-    public ChessPiece.Color GetTurn()
-    {
-        return this.turn;
-    }
-
-    public int GetHalfTurn()
-    {
-        return halfTurn;
+        return char.IsUpper(GetOnPosition(position).Value) ? 1 : -1;
     }
 
     public override string ToString()
     {
         string boardString = "";
 
-        for(int row = 8; row >= 1; row--)
+        for (int row = 0; row < 8; row++)
         {
-            for(int col = 0; col <= 7; col++)
+            for (int col = 0; col < 8; col++)
             {
-                ChessPiece piece = null;
-                Position pos = Position.IndexToPosition(col, row);
-                if(pos != null)
+                if (tiles[col, row] != null)
                 {
-                    piece = GetOnPosition(pos);
-                }
-
-                if(piece != null)
-                {
-                    if(piece.GetColor() == ChessPiece.Color.WHITE)
-                        boardString += piece.GetSymbol().ToString();
-                    else
-                        boardString += piece.GetSymbol().ToString().ToLower();
+                    boardString += tiles[col, row];
                 }
                 else
                 {

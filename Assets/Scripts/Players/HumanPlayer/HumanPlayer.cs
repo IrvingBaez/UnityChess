@@ -3,18 +3,18 @@
     public event System.Action pieceSelected;
 
     public MoveTile tile;
-    private ChessPiece selected;
+    private Board.Position selected;
 
     public override void Move()
     {
-        game.boardView.PieceClicked += PieceClicked;        
+        game.BoardView.PieceClicked += PieceClicked;        
     }
 
     private void PieceClicked()
     {
-        ChessPiece clicked = game.boardView.clicked;
+        Board.Position clicked = game.BoardView.clicked;
 
-        if (clicked.GetColor() != this.color)
+        if (board.GetPieceColor(clicked) != color)
         {
             return;
         }
@@ -22,7 +22,7 @@
         this.selected = clicked;
         pieceSelected?.Invoke();
 
-        foreach(Move move in this.selected.GetMoves())
+        foreach(Board.Move move in board.LegalMoves(selected))
         {
             MoveTile newTile = Instantiate(tile);
             newTile.Initialize(this, move);
@@ -30,9 +30,9 @@
         this.selected = null;
     }
 
-    public void SetMove(Move move)
+    public void SetMove(Board.Move move)
     {
-        game.boardView.PieceClicked -= PieceClicked;
+        game.BoardView.PieceClicked -= PieceClicked;
         game.Move(move);
     }
 }

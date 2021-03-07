@@ -1,4 +1,6 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
 using TMPro;
 using UnityEngine;
 
@@ -6,24 +8,22 @@ public class Game : MonoBehaviour
 {
     [SerializeField] private ChessPlayer white;
     [SerializeField] private ChessPlayer black;
-    public BoardView boardView;
+    public BoardView BoardView;
 
     [Header("UI")]
     [SerializeField] private TMP_Text textState;
     [SerializeField] private TMP_Text textTurn;
+    [SerializeField] private TMP_Text textBlackEval;
+    [SerializeField] private TMP_Text textWhiteEval;
 
-    [Header("References")]
-    [SerializeField] private CheckTile checkTileRef;
-    [SerializeField] private Board boardRef;
-    
     private Board board;
     private ChessPlayer currentPlayer;
-    private CheckTile checkTile;
+    private readonly string initialPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
     void Start()
     {
-        white.SetColor(ChessPiece.Color.WHITE);
-        black.SetColor(ChessPiece.Color.BLACK);
+        white.SetColor(1);
+        black.SetColor(-1);
 
         currentPlayer = white;
         NewGame();
@@ -31,26 +31,27 @@ public class Game : MonoBehaviour
 
     private void NewGame()
     {
-        board = new Board();
-
         white.game = this;
         black.game = this;
+        board = new Board(initialPosition);
+        
         white.SetBoard(board);
         black.SetBoard(board);
-        boardView.SetBoard(board);
 
-        boardView.DrawBoard();
+        BoardView.SetBoard(board);
+        BoardView.DrawBoard();
+
         StartCoroutine(Play());
     }
 
     private IEnumerator Play()
     {
         print(board.Fen());
-        switch (board.GetGameState())
+        switch (board.State)
         {
             case Board.GameState.ALIVE:
-            case Board.GameState.BLACK_CHECK:
-            case Board.GameState.WHITE_CHECK:
+            case Board.GameState.CHECK_TO_BLACK:
+            case Board.GameState.CHECK_TO_WHITE:
                 yield return null;
                 currentPlayer.Move();
                 break;
@@ -60,10 +61,10 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void Move(Move move)
+    public void Move(Board.Move move)
     {
         board.PerformMove(move);
-        boardView.DrawBoard();
+        BoardView.DrawBoard();
 
         if (currentPlayer == white)
         {
@@ -74,11 +75,10 @@ public class Game : MonoBehaviour
             currentPlayer = white;
         }
 
-        if(checkTile != null)
-            Destroy(checkTile.gameObject);
-
-        textState.text = board.GetGameState().ToString();
+        textState.text = board.State.ToString();
         textTurn.text = currentPlayer.GetColor().ToString();
+        textBlackEval.text = black.Evaluation().ToString();
+        textWhiteEval.text = white.Evaluation().ToString();
 
         StartCoroutine(Play());
     }

@@ -5,7 +5,7 @@ public abstract class ChessPlayer : MonoBehaviour
 {
     public Game game;
     protected Board board;
-    protected ChessPiece.Color color;
+    protected int color;
 
     public abstract void Move();
 
@@ -14,13 +14,23 @@ public abstract class ChessPlayer : MonoBehaviour
         this.board = board;
     }
 
-    public void SetColor(ChessPiece.Color color)
+    public void SetColor(int color)
     {
         this.color = color;
     }
 
-    public ChessPiece.Color GetColor()
+    public int GetColor()
     {
-        return this.color;
+        return color;
+    }
+
+    public float Evaluation()
+    {
+        if(this is MinimaxPlayer computer)
+        {
+            return computer.GetEvaluation();
+        }
+
+        return 0;
     }
 }
