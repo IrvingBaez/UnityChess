@@ -40,6 +40,11 @@ public class Tree<I, C>
         return root.GetSize();
     }
 
+    public int MaxDepth()
+    {
+        return root.MaxDepth() - 1;
+    }
+
     public override string ToString()
     {
         return this.Print(root, "\t");

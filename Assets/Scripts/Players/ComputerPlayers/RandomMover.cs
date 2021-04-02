@@ -4,28 +4,28 @@ public class RandomMover : ChessPlayer
 {
     public override void Move()
     {
-        ChessPiece piece;
-        Move move = null;
+        Board.Position piece;
+        Board.Move move = null;
 
-        switch (this.color)
+        switch (color)
         {
-            case ChessPiece.Color.WHITE:
+            case 1:
                 do
                 {
-                    piece = board.GetWhitePieces()[Random.Range(0, board.GetWhitePieces().Count)];
+                    piece = board.WhitePieces[Random.Range(0, board.WhitePieces.Count)];
                 }
-                while (piece == null || piece.GetMoves().Count == 0);
+                while (piece == null || board.LegalMoves(piece).Count == 0);
 
-                move = piece.GetMoves()[Random.Range(0, piece.GetMoves().Count)];
+                move = board.LegalMoves(piece)[Random.Range(0, board.LegalMoves(piece).Count)];
                 break;
-            case ChessPiece.Color.BLACK:
+            case -1:
                 do
                 {
-                    piece = board.GetBlackPieces()[Random.Range(0, board.GetBlackPieces().Count)];
+                    piece = board.BlackPieces[Random.Range(0, board.BlackPieces.Count)];
                 }
-                while (piece == null || piece.GetMoves().Count == 0);
+                while (piece == null || board.LegalMoves(piece).Count == 0);
 
-                move = piece.GetMoves()[Random.Range(0, piece.GetMoves().Count)];
+                move = board.LegalMoves(piece)[Random.Range(0, board.LegalMoves(piece).Count)];
                 break;
         }
 

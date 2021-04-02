@@ -44,6 +44,21 @@ public class Node<I, C>
         return size;
     }
 
+    public int MaxDepth()
+    {
+        int max = 0;
+        foreach (Node<I, C> child in children)
+        {
+            int childDepth = child.MaxDepth();
+            if (childDepth > max)
+            {
+                max = childDepth;
+            }
+        }
+
+        return max + 1;
+    }
+
     public Node(I identifier, C content, float value)
     {
         this.identifier = identifier;
@@ -143,6 +158,6 @@ public class Node<I, C>
 
     public override string ToString()
     {
-        return $"{identifier}: {value}";
+        return $"{getDepth()}, {identifier}: {value}\n{content}";
     }
 }

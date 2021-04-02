@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class BoardView : MonoBehaviour
 {
@@ -9,7 +11,8 @@ public class BoardView : MonoBehaviour
     private bool flipped;
 
     [Header("Reference")]
-    public ChessPieceView pieceView;
+    public PieceView pieceView;
+    public ColorTile colorTile;
 
     [Header("White Sprites")]
     public Sprite whiteKingSprite;
@@ -18,7 +21,7 @@ public class BoardView : MonoBehaviour
     public Sprite whiteBishopSprite;
     public Sprite whiteKnightSprite;
     public Sprite whitePawnSprite;
-    
+
     [Header("Black Sprites")]
     public Sprite blackKingSprite;
     public Sprite blackQueenSprite;
@@ -27,7 +30,7 @@ public class BoardView : MonoBehaviour
     public Sprite blackKnightSprite;
     public Sprite blackPawnSprite;
 
-    [HideInInspector] public ChessPiece clicked;
+    [HideInInspector] public Board.Position clicked;
 
     public void SetBoard(Board board)
     {
@@ -37,64 +40,88 @@ public class BoardView : MonoBehaviour
     public void DrawBoard()
     {
         DrawingBoard?.Invoke();
-        foreach (ChessPiece piece in board.GetWhitePieces())
+
+        for (int row = 0; row < 8; row++)
         {
-            ChessPieceView view = Instantiate(pieceView);
-            view.transform.position = SolveWorldPosition(piece.GetPosition());
-
-            switch (piece.GetSymbol())
+           for(int col = 0; col < 8; col++)
             {
-                case ChessPiece.Symbol.K:
-                    view.Initialize(whiteKingSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.Q:
-                    view.Initialize(whiteQueenSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.R:
-                    view.Initialize(whiteRookSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.B:
-                    view.Initialize(whiteBishopSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.N:
-                    view.Initialize(whiteKnightSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.P:
-                    view.Initialize(whitePawnSprite, piece, this);
-                    break;
-            }
-        }
+                char? piece = board.GetOnPosition(Board.Position.Create(col, row));
+                if (piece == null)
+                    continue;
 
-        foreach (ChessPiece piece in board.GetBlackPieces())
-        {
-            ChessPieceView view = Instantiate(pieceView);
-            view.transform.position = SolveWorldPosition(piece.GetPosition());
-
-            switch (piece.GetSymbol())
-            {
-                case ChessPiece.Symbol.K:
-                    view.Initialize(blackKingSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.Q:
-                    view.Initialize(blackQueenSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.R:
-                    view.Initialize(blackRookSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.B:
-                    view.Initialize(blackBishopSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.N:
-                    view.Initialize(blackKnightSprite, piece, this);
-                    break;
-                case ChessPiece.Symbol.P:
-                    view.Initialize(blackPawnSprite, piece, this);
-                    break;
+                PieceView view = Instantiate(pieceView);
+                view.transform.position = SolveWorldPosition(col, row);
+                switch (piece)
+                {
+                    case 'K':
+                        view.Initialize(whiteKingSprite, col, row, this);
+                        break;
+                    case 'Q':
+                        view.Initialize(whiteQueenSprite, col, row, this);
+                        break;
+                    case 'R':
+                        view.Initialize(whiteRookSprite, col, row, this);
+                        break;
+                    case 'B':
+                        view.Initialize(whiteBishopSprite, col, row, this);
+                        break;
+                    case 'N':
+                        view.Initialize(whiteKnightSprite, col, row, this);
+                        break;
+                    case 'P':
+                        view.Initialize(whitePawnSprite, col, row, this);
+                        break;
+                    case 'k':
+                        view.Initialize(blackKingSprite, col, row, this);
+                        break;
+                    case 'q':
+                        view.Initialize(blackQueenSprite, col, row, this);
+                        break;
+                    case 'r':
+                        view.Initialize(blackRookSprite, col, row, this);
+                        break;
+                    case 'b':
+                        view.Initialize(blackBishopSprite, col, row, this);
+                        break;
+                    case 'n':
+                        view.Initialize(blackKnightSprite, col, row, this);
+                        break;
+                    case 'p':
+                        view.Initialize(blackPawnSprite, col, row, this);
+                        break;
+                }
             }
         }
     }
 
-    public Vector3 SolveWorldPosition(Position boardPosition)
+    public void ShowTile(Board.Position position, Color color)
+    {
+        ColorTile newTile = Instantiate(colorTile);
+        newTile.Initialize(position, this, color);
+    }
+
+    public void ShowTiles(List<Board.Position> positions, Color color)
+    {
+        foreach(Board.Position position in positions)
+        {
+            ShowTile(position, color);
+        }
+    }
+
+    public void ShowTiles(List<Board.Move> moves, Color color)
+    {
+        foreach (Board.Move move in moves)
+        {
+            ShowTile(move.destiny, color);
+        }
+    }
+
+    public Vector3 SolveWorldPosition(Board.Position position)
+    {
+        return SolveWorldPosition(position.col, position.row);
+    }
+
+    public Vector3 SolveWorldPosition(int col, int row)
     {
         Vector3 deface = transform.parent.position;
         Vector3 size = this.GetComponent<Renderer>().bounds.size;
@@ -107,8 +134,8 @@ public class BoardView : MonoBehaviour
         origin += (3.5f * tileYSize * Vector3.down);
 
         Vector3 position = origin;
-        position += (boardPosition.row - 1) * tileXSize * Vector3.up;
-        position += ((int)boardPosition.col) * tileYSize * Vector3.right;
+        position += (7-row) * tileXSize * Vector3.up;
+        position += (col) * tileYSize * Vector3.right;
 
         if (flipped)
         {
@@ -118,10 +145,15 @@ public class BoardView : MonoBehaviour
         return position + Vector3.back;
     }
 
-    public void NotifyClick(ChessPiece piece)
+    public void NotifyClick(int col, int row)
     {
-        clicked = piece;
+        clicked = Board.Position.Create(col, row);
         PieceClicked?.Invoke();
+
+        ShowTiles(board.BlackSight, new Color(1, 0, 0, 0.5f));
+        //ShowTiles(board.whiteSight, new Color(1, 0, 1, 0.5f));
+        ShowTile(clicked, new Color(1, 1, 0, 0.5f));
+        ShowTiles(board.LegalMoves(clicked), new Color(0, 1, 0, 0.5f));
     }
 
     public void flip()

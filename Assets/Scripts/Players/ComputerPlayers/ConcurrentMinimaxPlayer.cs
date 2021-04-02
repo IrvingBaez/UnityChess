@@ -4,13 +4,13 @@ using UnityEngine;
 
 public class ConcurrentMinimaxPlayer : ChessPlayer
 {
-    private Tree<Move, Board> tree;
-    private Move bestMove;
+    private Tree<Board.Move, Board> tree;
+    private Board.Move bestMove;
     private Strategy strategy;
 
     void Start()
     {
-        tree = new Tree<Move, Board>(null, board);
+        tree = new Tree<Board.Move, Board>(null, board);
     }
 
     void Update()

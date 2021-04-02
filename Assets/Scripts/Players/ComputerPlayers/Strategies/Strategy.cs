@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using UnityEngine;
 
 public abstract class Strategy : MonoBehaviour
@@ -9,20 +10,35 @@ public abstract class Strategy : MonoBehaviour
     protected string name;
     public Stopwatch checkmateWatch = new Stopwatch();
 
+    protected Dictionary<char, float> pieceValues = new Dictionary<char, float>() {
+        { 'K', 1000 },
+        { 'Q', 9 },
+        { 'R', 5 },
+        { 'B', 3 },
+        { 'N', 3 },
+        { 'P', 1 },
+        { 'k', -1000 },
+        { 'q', -9 },
+        { 'r', -5 },
+        { 'b', -3 },
+        { 'n', -3 },
+        { 'p', -1 }
+    };
+
     public abstract float Evaluate(Board board);
 
     protected float FilterCheckMate(float value)
     {
         checkmateWatch.Start();
-        switch (board.GetGameState())
+        switch (board.State)
         {
-            case Board.GameState.WHITE_MATE:
+            case Board.GameState.CHECKMATE_TO_BLACK:
                 checkmateWatch.Stop();
                 return float.PositiveInfinity;
-            case Board.GameState.BLACK_MATE:
+            case Board.GameState.CHECKMATE_TO_WHITE:
                 checkmateWatch.Stop();
                 return float.NegativeInfinity;
-            case Board.GameState.STALE_MATE:
+            case Board.GameState.STALEMATE:
                 checkmateWatch.Stop();
                 return 0;
             default:
@@ -34,71 +50,62 @@ public abstract class Strategy : MonoBehaviour
     protected float Material()
     {
         float value = 0;
+        float holder;
 
-        foreach (ChessPiece piece in board.GetWhitePieces())
+        foreach (Board.Position piece in board.WhitePieces.Concat(board.BlackPieces))
         {
-            if (!(piece is King))
-                value += piece.GetValue();
-        }
-
-        foreach (ChessPiece piece in board.GetBlackPieces())
-        {
-            if (!(piece is King))
-                value -= piece.GetValue();
+            //UnityEngine.Debug.Log(piece);
+            pieceValues.TryGetValue(board.GetOnPosition(piece).Value, out holder);
+            value += holder;
         }
 
         return value;
     }
 
-    protected float Space()
+    protected float RelativeMaterial()
     {
-        List<Position> whiteSight = new List<Position>();
-        List<Position> blackSight = new List<Position>();
-
+        float whiteMaterial = 0;
+        float blackMaterial = 0;
+    /*
         foreach (ChessPiece piece in board.GetWhitePieces())
         {
-            foreach (Position pos in piece.GetSight())
-            {
-                if (!whiteSight.Contains(pos))
-                {
-                    whiteSight.Add(pos);
-                }
-            }
-        }
-
-        foreach (ChessPiece piece in board.GetBlackPieces())
-        {
-            foreach (Position pos in piece.GetSight())
-            {
-                if (!blackSight.Contains(pos))
-                {
-                    blackSight.Add(pos);
-                }
-            }
-        }
-
-        return whiteSight.Count - blackSight.Count;
-    }
-
-    protected float DistanceToKing()
-    {
-        float result = 0;
-
-        Position whiteKing = board.GetWhiteKing().GetPosition();
-        Position blackKing = board.GetBlackKing().GetPosition();
-
-        foreach (ChessPiece piece in board.GetWhitePieces())
-        {
-            if(!(piece is King))
-                result += Position.SquareDistance(blackKing, piece.GetPosition());
+            if (!(piece is King))
+                whiteMaterial += piece.GetValue();
         }
 
         foreach (ChessPiece piece in board.GetBlackPieces())
         {
             if (!(piece is King))
-                result -= Position.SquareDistance(whiteKing, piece.GetPosition());
+                blackMaterial += piece.GetValue();
+        }
+    */
+        return -1f / (1f + Mathf.Exp(whiteMaterial - blackMaterial)) + 0.5f;
+    }
+
+    protected float Space()
+    {
+        return board.WhiteSight.Count - board.BlackSight.Count;
+    }
+
+    protected float DistanceToKing()
+    {
+        float result = 0;
+/*
+        OldPosition whiteKing = board.GetWhiteKing().GetPosition();
+        OldPosition blackKing = board.GetBlackKing().GetPosition();
+
+        foreach (ChessPiece piece in board.GetWhitePieces())
+        {
+            if(!(piece is King))
+                result += OldPosition.SquareDistance(blackKing, piece.GetPosition());
         }
 
+        foreach (ChessPiece piece in board.GetBlackPieces())
+        {
+            if (!(piece is King))
+                result -= OldPosition.SquareDistance(whiteKing, piece.GetPosition());
+        }
+*/
         return result;
     }
 
