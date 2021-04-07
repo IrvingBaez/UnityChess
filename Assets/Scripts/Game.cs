@@ -61,7 +61,7 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void Move(Board.Move move)
+    public void Move(Move move)
     {
         board.PerformMove(move);
         BoardView.DrawBoard();

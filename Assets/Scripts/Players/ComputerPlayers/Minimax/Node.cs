@@ -2,41 +2,38 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Node<I, C>
+public class Node<I>
 {
     private readonly I identifier;
-    private readonly C content;
     private float value;
 
-    private Node<I, C> parent;
-    private Node<I, C> bestChild;
-    private List<Node<I, C>> children;
+    private Node<I> parent;
+    private Node<I> bestChild;
+    private List<Node<I>> children;
 
     public Node()
     {
         identifier = default(I);
-        content = default(C);
         value = float.NaN;
         parent = null;
         bestChild = null;
-        children = new List<Node<I, C>>();
+        children = new List<Node<I>>();
     }
 
-    public Node(I identifier, C content)
+    public Node(I identifier)
     {
         this.identifier = identifier;
-        this.content = content;
         value = float.NaN;
         parent = null;
         bestChild = null;
-        children = new List<Node<I, C>>();
+        children = new List<Node<I>>();
     }
 
     public int GetSize()
     {
         int size = 1;
 
-        foreach (Node<I, C> child in children)
+        foreach (Node<I> child in children)
         {
             size += child.GetSize();
         }
@@ -47,7 +44,7 @@ public class Node<I, C>
     public int MaxDepth()
     {
         int max = 0;
-        foreach (Node<I, C> child in children)
+        foreach (Node<I> child in children)
         {
             int childDepth = child.MaxDepth();
             if (childDepth > max)
@@ -59,37 +56,35 @@ public class Node<I, C>
         return max + 1;
     }
 
-    public Node(I identifier, C content, float value)
+    public Node(I identifier, float value)
     {
         this.identifier = identifier;
-        this.content = content;
         this.value = value;
         parent = null;
         bestChild = null;
-        children = new List<Node<I, C>>();
+        children = new List<Node<I>>();
     }
 
-    public void AddChild(Node<I, C> node)
+    public void AddChild(Node<I> node)
     {
         node.parent = this;
         this.children.Add(node);
     }
 
-    public void AddChild(I identifier, C content)
-    {
-        AddChild(new Node<I, C>(identifier, content));
+    public void AddChild(I identifier){
+        AddChild(new Node<I>(identifier));
     }
 
-    public void AddChild(I identifier, C content, float value)
+    public void AddChild(I identifier, float value)
     {
-        AddChild(new Node<I, C>(identifier, content, value));
+        AddChild(new Node<I>(identifier, value));
     }
 
     public int getDepth()
     {
         int depth = 0;
 
-        Node<I, C> node = this;
+        Node<I> node = this;
         while (node.GetParent() != null)
         {
             depth++;
@@ -98,17 +93,17 @@ public class Node<I, C>
         return depth;
     }
 
-    public Node<I, C> GetParent()
+    public Node<I> GetParent()
     {
         return this.parent;
     }
 
-    public void SetBestChild(Node<I, C> bestChild)
+    public void SetBestChild(Node<I> bestChild)
     {
         this.bestChild = bestChild;
     }
 
-    public Node<I, C> GetBestChild()
+    public Node<I> GetBestChild()
     {
         return this.bestChild;
     }
@@ -123,24 +118,19 @@ public class Node<I, C>
         return value;
     }
 
-    public C GetContent()
-    {
-        return content;
-    }
-
     public I GetIdentifier()
     {
         return identifier;
     }
 
-    public List<Node<I, C>> GetChildren()
+    public List<Node<I>> GetChildren()
     {
         return children;
     }
 
-    public Node<I, C> getChild(I identifier)
+    public Node<I> getChild(I identifier)
     {
-        foreach(Node<I, C> child in children)
+        foreach(Node<I> child in children)
         {
             if (child.identifier.Equals(identifier))
             {
@@ -158,6 +148,6 @@ public class Node<I, C>
 
     public override string ToString()
     {
-        return $"{getDepth()}, {identifier}: {value}\n{content}";
+        return $"{getDepth()}, {identifier}: {value}";
     }
 }

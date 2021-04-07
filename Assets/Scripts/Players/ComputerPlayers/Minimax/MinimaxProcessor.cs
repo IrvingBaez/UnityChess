@@ -1,14 +1,14 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-public class MinimaxProcessor<I, C>
+public class MinimaxProcessor<I>
 {
     private readonly Mode phase;
-    private readonly Tree<I, C> tree;
+    private readonly Tree<I> tree;
 
     public enum Mode { MIN, MAX }
 
-    public MinimaxProcessor(Mode phase, Tree<I, C> tree)
+    public MinimaxProcessor(Mode phase, Tree<I> tree)
     {
         this.phase = phase;
         this.tree = tree;
@@ -19,7 +19,7 @@ public class MinimaxProcessor<I, C>
         Process(tree.GetRoot());
     }
 
-    private float Process(Node<I, C> currentNode)
+    private float Process(Node<I> currentNode)
     {
         Mode mode = SetMode(currentNode);
         if(float.IsNaN(currentNode.GetValue()))
@@ -27,10 +27,10 @@ public class MinimaxProcessor<I, C>
             if(currentNode.GetChildren().Count == 0)
                 return float.NaN;
 
-            Node<I, C> bestChild = currentNode.GetChildren()[0];
+            Node<I> bestChild = currentNode.GetChildren()[0];
             bestChild.SetValue(Process(bestChild));
 
-            foreach(Node<I, C> child in currentNode.GetChildren())
+            foreach(Node<I> child in currentNode.GetChildren())
             {
                 if (child == bestChild)
                     continue;
@@ -52,7 +52,7 @@ public class MinimaxProcessor<I, C>
         return currentNode.GetValue();
     }
 
-    private Mode SetMode(Node<I, C> node)
+    private Mode SetMode(Node<I> node)
     {
         if(node.getDepth() % 2 == 0)
         {
@@ -69,7 +69,7 @@ public class MinimaxProcessor<I, C>
     public List<I> GetSequence()
     {
         List<I> sequence = new List<I>();
-        Node<I, C> node = tree.GetRoot();
+        Node<I> node = tree.GetRoot();
 
         while(node.GetBestChild() != null)
         {
