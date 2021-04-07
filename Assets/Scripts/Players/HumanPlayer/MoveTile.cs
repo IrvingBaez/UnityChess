@@ -7,10 +7,10 @@ public class MoveTile : MonoBehaviour
     private static event System.Action TileClicked;
     
     private HumanPlayer player;
-    private Board.Position position;
-    private Board.Move move;
+    private Position position;
+    private Move move;
 
-    public void Initialize(HumanPlayer player, Board.Move move)
+    public void Initialize(HumanPlayer player, Move move)
     {
         TileClicked += DestroyTiles;
         player.pieceSelected += DestroyTiles;

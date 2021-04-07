@@ -5,7 +5,7 @@ public class ColorTile : MonoBehaviour
 {
     BoardView boardView;
 
-    public void Initialize(Board.Position position, BoardView boardView, Color color)
+    public void Initialize(Position position, BoardView boardView, Color color)
     {
         this.boardView = boardView;
         boardView.PieceClicked += DestroyColorTiles;

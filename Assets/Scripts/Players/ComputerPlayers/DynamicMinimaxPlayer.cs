@@ -5,25 +5,29 @@ using System.Collections;
 
 public class DynamicMinimaxPlayer : ChessPlayer
 {
+    public override void Move()
+    {
+    }
+    /*
     private float evaluation;
     private int phase;
-    private LinkedList<Node<Board.Move, Board>> frontier;
+    private LinkedList<Node<Move, Board>> frontier;
 
     [SerializeField] private int limit;
     [SerializeField] private Strategy strategy;
 
     private int explored;
-    private Tree<Board.Move, Board> tree;
+    private Tree<Move, Board> tree;
 
     private Stopwatch findChildrenWatch = new Stopwatch();
     private Stopwatch constructTreeWatch = new Stopwatch();
 
     public override void Move()
     {
-        tree = new Tree<Board.Move, Board>(null, board);
+        tree = new Tree<Move, Board>(null, board);
         tree.GetRoot().SetValue(strategy.Evaluate(tree.GetRoot().GetContent()));
 
-        frontier = new LinkedList<Node<Board.Move, Board>>();
+        frontier = new LinkedList<Node<Move, Board>>();
         frontier.AddLast(tree.GetRoot());
         explored = 0;
 
@@ -51,7 +55,7 @@ public class DynamicMinimaxPlayer : ChessPlayer
         {
             explored++;
 
-            Node<Board.Move, Board> exploring = frontier.First.Value;
+            Node<Move, Board> exploring = frontier.First.Value;
             frontier.RemoveFirst();
 
             exploring.SetValue(strategy.Evaluate(exploring.GetContent()));
@@ -69,13 +73,13 @@ public class DynamicMinimaxPlayer : ChessPlayer
         }
     }
 
-    private void UpdateTreeValues(Node<Board.Move, Board> node)
+    private void UpdateTreeValues(Node<Move, Board> node)
     {
-        Node<Board.Move, Board> parent = node.GetParent();
+        Node<Move, Board> parent = node.GetParent();
         if(parent == null) { return; }
 
         bool even = parent.getDepth() % 2 == 0;
-        Node<Board.Move, Board> best = parent.GetBestChild();
+        Node<Move, Board> best = parent.GetBestChild();
 
         if (color == 1)
         {
@@ -117,13 +121,13 @@ public class DynamicMinimaxPlayer : ChessPlayer
         }
     }
 
-    private bool IsGoalState(Node<Board.Move, Board> node)
+    private bool IsGoalState(Node<Move, Board> node)
     {
         return (board.Turn == 1 && float.IsPositiveInfinity(node.GetValue()))
             || (board.Turn == -1 && float.IsNegativeInfinity(node.GetValue()));
     }
 
-    private bool ShouldExpand(Node<Board.Move, Board> node)
+    private bool ShouldExpand(Node<Move, Board> node)
     {
         if(color == 1)
         {
@@ -133,17 +137,17 @@ public class DynamicMinimaxPlayer : ChessPlayer
         return frontier.Count == 0 || node.GetValue() >= tree.GetRoot().GetValue();
     }
 
-    private void EnqueueChildren(Node<Board.Move, Board> node)
+    private void EnqueueChildren(Node<Move, Board> node)
     {
         findChildrenWatch.Start();
 
-        List<Board.Position> pieces = node.GetContent().Turn == 1 ? node.GetContent().WhitePieces : node.GetContent().BlackPieces;
+        List<Position> pieces = node.GetContent().Turn == 1 ? node.GetContent().WhitePieces : node.GetContent().BlackPieces;
         
-        foreach (Board.Position piece in pieces)
+        foreach (Position piece in pieces)
         {
-            foreach (Board.Move move in node.GetContent().LegalMoves(piece))
+            foreach (Move move in node.GetContent().LegalMoves[piece])
             {
-                Node<Board.Move, Board> child = new Node<Board.Move, Board>(move, node.GetContent().CopyAndMove(move));
+                Node<Move, Board> child = new Node<Move, Board>(move, node.GetContent().CopyAndMove(move));
                 node.AddChild(child);
 
                 if(color == 1)
@@ -177,4 +181,5 @@ public class DynamicMinimaxPlayer : ChessPlayer
     {
         return evaluation;
     }
+    */
 }

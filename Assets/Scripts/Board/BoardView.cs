@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -30,7 +31,7 @@ public class BoardView : MonoBehaviour
     public Sprite blackKnightSprite;
     public Sprite blackPawnSprite;
 
-    [HideInInspector] public Board.Position clicked;
+    [HideInInspector] public Position clicked;
 
     public void SetBoard(Board board)
     {
@@ -45,7 +46,7 @@ public class BoardView : MonoBehaviour
         {
            for(int col = 0; col < 8; col++)
             {
-                char? piece = board.GetOnPosition(Board.Position.Create(col, row));
+                char? piece = board.GetOnPosition(Position.Create(col, row));
                 if (piece == null)
                     continue;
 
@@ -94,29 +95,29 @@ public class BoardView : MonoBehaviour
         }
     }
 
-    public void ShowTile(Board.Position position, Color color)
+    public void ShowTile(Position position, Color color)
     {
         ColorTile newTile = Instantiate(colorTile);
         newTile.Initialize(position, this, color);
     }
 
-    public void ShowTiles(List<Board.Position> positions, Color color)
+    public void ShowTiles(List<Position> positions, Color color)
     {
-        foreach(Board.Position position in positions)
+        foreach(Position position in positions)
         {
             ShowTile(position, color);
         }
     }
 
-    public void ShowTiles(List<Board.Move> moves, Color color)
+    public void ShowTiles(List<Move> moves, Color color)
     {
-        foreach (Board.Move move in moves)
+        foreach (Move move in moves)
         {
             ShowTile(move.destiny, color);
         }
     }
 
-    public Vector3 SolveWorldPosition(Board.Position position)
+    public Vector3 SolveWorldPosition(Position position)
     {
         return SolveWorldPosition(position.col, position.row);
     }
@@ -147,13 +148,16 @@ public class BoardView : MonoBehaviour
 
     public void NotifyClick(int col, int row)
     {
-        clicked = Board.Position.Create(col, row);
+        clicked = Position.Create(col, row);
         PieceClicked?.Invoke();
 
-        ShowTiles(board.BlackSight, new Color(1, 0, 0, 0.5f));
+        if(board.LegalMoves.TryGetValue(clicked, out List<Move> moves)){
+            ShowTiles(moves, new Color(0, 1, 0, 0.5f));
+        }
+        
+        ShowTiles(board.BlackSight.Values.SelectMany(x => x).ToList(), new Color(1, 0, 0, 0.5f));
         //ShowTiles(board.whiteSight, new Color(1, 0, 1, 0.5f));
         ShowTile(clicked, new Color(1, 1, 0, 0.5f));
-        ShowTiles(board.LegalMoves(clicked), new Color(0, 1, 0, 0.5f));
     }
 
     public void flip()

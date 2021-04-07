@@ -52,7 +52,7 @@ public abstract class Strategy : MonoBehaviour
         float value = 0;
         float holder;
 
-        foreach (Board.Position piece in board.WhitePieces.Concat(board.BlackPieces))
+        foreach (Position piece in board.WhitePieces.Concat(board.BlackPieces))
         {
             //UnityEngine.Debug.Log(piece);
             pieceValues.TryGetValue(board.GetOnPosition(piece).Value, out holder);

@@ -6,7 +6,11 @@ using UnityEngine;
 
 public class MinimaxPlayer : ChessPlayer
 {
-    private Tree<Board.Move, Board> tree;
+    public override void Move()
+    {
+    }
+    /*
+    private Tree<Move> tree;
     private float evaluation;
     [SerializeField] private int depth = 2;
     [SerializeField] private Strategy strategy;
@@ -17,7 +21,7 @@ public class MinimaxPlayer : ChessPlayer
 
     public override void Move()
     {
-        tree = new Tree<Board.Move, Board>(null, board);
+        tree = new Tree<Move>(null);
 
         constructTreeWatch.Start();
         strategy.checkmateWatch.Reset();
@@ -25,8 +29,8 @@ public class MinimaxPlayer : ChessPlayer
         ConstructTree(tree.GetRoot());
         constructTreeWatch.Stop();
 
-        MinimaxProcessor<Board.Move, Board>.Mode mode = (MinimaxProcessor<Board.Move, Board>.Mode)(int)color;
-        MinimaxProcessor<Board.Move, Board> processor = new MinimaxProcessor<Board.Move, Board>(mode, tree);
+        MinimaxProcessor<Move>.Mode mode = (MinimaxProcessor<Move>.Mode)(int)color;
+        MinimaxProcessor<Move> processor = new MinimaxProcessor<Move>(mode, tree);
         
         processor.Process();
         evaluation = tree.GetRoot().GetValue();
@@ -47,7 +51,7 @@ public class MinimaxPlayer : ChessPlayer
         findChildrenWatch.Reset();
     }
 
-    private void ConstructTree(Node<Board.Move, Board> node)
+    private void ConstructTree(Node<Move> node)
     {
         findChildrenWatch.Start();
         FindChildren(node);
@@ -60,7 +64,7 @@ public class MinimaxPlayer : ChessPlayer
             evaluationWatch.Stop();
         }
 
-        foreach (Node<Board.Move, Board> child in node.GetChildren())
+        foreach (Node<Move> child in node.GetChildren())
         {
             if(child.getDepth() < depth)
             {
@@ -75,14 +79,14 @@ public class MinimaxPlayer : ChessPlayer
         }
     }
 
-    private void FindChildren(Node<Board.Move, Board> node)
+    private void FindChildren(Node<Move> node)
     {
         UnityEngine.Debug.Log($"{node} has the children:");
-        List<Board.Position> pieces = node.GetContent().Turn == 1 ? node.GetContent().WhitePieces : node.GetContent().BlackPieces;
+        List<Position> pieces = node.GetContent().Turn == 1 ? node.GetContent().WhitePieces : node.GetContent().BlackPieces;
         
-        foreach(Board.Position piece in pieces)
+        foreach(Position piece in pieces)
         {
-            foreach(Board.Move move in node.GetContent().LegalMoves(piece))
+            foreach(Move move in node.GetContent().LegalMoves[piece])
             {
                 node.AddChild(move, node.GetContent().CopyAndMove(move));
                 UnityEngine.Debug.Log($"\t{node.getChild(move)}");
@@ -94,4 +98,5 @@ public class MinimaxPlayer : ChessPlayer
     {
         return evaluation;
     }
+    */
 }

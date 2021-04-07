@@ -1,31 +1,31 @@
 ﻿using UnityEngine;
 using System;
 
-public class Tree<I, C>
+public class Tree<I>
 {
-    private Node<I, C> root;
+    private Node<I> root;
 
     public Tree()
     {
-        this.root = new Node<I, C>();
+        this.root = new Node<I>();
     }
 
-    public Tree(Node<I, C> root)
+    public Tree(Node<I> root)
     {
         this.root = root;
     }
 
-    public Tree(I identifier, C content)
+    public Tree(I identifier)
     {
-        this.root = new Node<I, C>(identifier, content);
+        this.root = new Node<I>(identifier);
     }
 
-    public Tree(I identifier, C content, float value)
+    public Tree(I identifier, float value)
     {
-        this.root = new Node<I, C>(identifier, content, value);
+        this.root = new Node<I>(identifier, value);
     }
 
-    public Node<I, C> GetRoot()
+    public Node<I> GetRoot()
     {
         return root;
     }
@@ -50,11 +50,11 @@ public class Tree<I, C>
         return this.Print(root, "\t");
     }
 
-    private string Print(Node<I, C> node, string separator)
+    private string Print(Node<I> node, string separator)
     {
         string result = $"\n{separator}{node}";
 
-        foreach(Node<I, C> child in node.GetChildren())
+        foreach(Node<I> child in node.GetChildren())
         {
             result += Print(child, separator + "\t");
         }

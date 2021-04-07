@@ -3,7 +3,7 @@
     public event System.Action pieceSelected;
 
     public MoveTile tile;
-    private Board.Position selected;
+    private Position selected;
 
     public override void Move()
     {
@@ -12,7 +12,7 @@
 
     private void PieceClicked()
     {
-        Board.Position clicked = game.BoardView.clicked;
+        Position clicked = game.BoardView.clicked;
 
         if (board.GetPieceColor(clicked) != color)
         {
@@ -22,7 +22,7 @@
         this.selected = clicked;
         pieceSelected?.Invoke();
 
-        foreach(Board.Move move in board.LegalMoves(selected))
+        foreach(Move move in board.LegalMoves[selected])
         {
             MoveTile newTile = Instantiate(tile);
             newTile.Initialize(this, move);
@@ -30,7 +30,7 @@
         this.selected = null;
     }
 
-    public void SetMove(Board.Move move)
+    public void SetMove(Move move)
     {
         game.BoardView.PieceClicked -= PieceClicked;
         game.Move(move);
