@@ -26,10 +26,10 @@ public abstract class ChessPlayer : MonoBehaviour
 
     public float Evaluation()
     {
-        /*if(this is MinimaxPlayer computer)
+        if(this is Experimental computer)
         {
-            return computer.GetEvaluation();
-        }*/
+            return computer.evaluation;
+        }
 
         return 0;
     }

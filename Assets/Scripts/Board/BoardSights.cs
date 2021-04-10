@@ -7,6 +7,7 @@ public partial class Board{
     Dictionary<Position, List<Position>> playerChecks;
 
     private void FindSight(){
+        sightWatch.Start();
         WhiteSight  = new Dictionary<Position, List<Position>>();
         BlackSight  = new Dictionary<Position, List<Position>>();
         WhitePins   = new Dictionary<Position, List<Position>>();
@@ -27,6 +28,7 @@ public partial class Board{
         foreach (Position position in BlackPieces){
             FindSight(position);
         }
+        sightWatch.Stop();
     }
 
     private void FindSight(Position position){

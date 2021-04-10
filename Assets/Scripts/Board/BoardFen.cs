@@ -19,7 +19,7 @@ public partial class Board
             {
                 if (fen[0] != '/')
                 {
-                    tiles[index % 8, index / 8] = fen[0];
+                    SetOnPosition(index % 8, index / 8, fen[0]);
 
                     //Save pieces and kings positions
                     if (whiteSymbols.Contains(fen[0]))
@@ -113,7 +113,7 @@ public partial class Board
         {
             for(int col = 0; col < 8; col++)
             {
-                if(tiles[col, row] == null)
+                if(GetOnPosition(col, row) == null)
                 {
                     freeSpaces++;
                 }
@@ -124,7 +124,7 @@ public partial class Board
                         fen += freeSpaces;
                         freeSpaces = 0;
                     }
-                    fen += tiles[col, row];
+                    fen += GetOnPosition(col, row);
                 }
             }
 

@@ -6,7 +6,7 @@ public class RandomMover : ChessPlayer
 {
     public override void Move()
     {
-        List<Move> legalMoves = board.LegalMoves.Values.SelectMany(x => x).ToList();
+        List<Move> legalMoves = board.AllLegalMoves().ToList();
         
         Random random = new Random();
         int index = random.Next(legalMoves.Count);

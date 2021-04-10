@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 public partial class Board
 {
@@ -8,6 +9,7 @@ public partial class Board
     List<Position> playerPieces;
 
     public void FindLegalMoves(){
+        moveWatch.Start();
         LegalMoves  = new Dictionary<Position, List<Move>>();
 
         playerSight     = Turn == 1 ? WhiteSight    : BlackSight;
@@ -19,6 +21,7 @@ public partial class Board
         foreach(Position position in playerPieces){
             FindLegalMoves(position);
         }
+        moveWatch.Stop();
     }
 
     public void FindLegalMoves(Position position)
@@ -51,6 +54,7 @@ public partial class Board
 
     private void KingMoves(Position position)
     {
+        kingMoveWatch.Start();
         List<Move> kingMoves = new List<Move>();
 
         List<Position> opponentSight = FlatDict(Turn == 1 ? BlackSight : WhiteSight);
@@ -58,7 +62,7 @@ public partial class Board
 
         foreach (Position checking in playerSight[position]){
             if (!opponentSight.Contains(checking) && !playerPieces.Contains(checking)){
-                kingMoves.Add(new Move(position, checking));
+                kingMoves.Add(new Move(position, checking, GetOnPosition(checking)));
             }
         }
 
@@ -69,7 +73,7 @@ public partial class Board
             !opponentSight.Contains(Position.Create(position.col - 1, position.row)) &&
             !opponentSight.Contains(Position.Create(position.col - 2, position.row))
             ){
-            kingMoves.Add(new Move(position, Position.Create(position.col - 2, position.row)));
+            kingMoves.Add(new Move(position, Position.Create(position.col - 2, position.row), null));
         }
 
         if (castlig[1] &&
@@ -78,13 +82,15 @@ public partial class Board
             !opponentSight.Contains(Position.Create(position.col + 1, position.row)) &&
             !opponentSight.Contains(Position.Create(position.col + 2, position.row))
             ){
-            kingMoves.Add(new Move(position, Position.Create(position.col + 2, position.row)));
+            kingMoves.Add(new Move(position, Position.Create(position.col + 2, position.row), null));
         }
 
         LegalMoves[position] = kingMoves;
+        kingMoveWatch.Stop();
     }
 
     private void PieceMoves(Position position){
+        pieceMoveWatch.Start();
         if(enemyChecks.Count == 2){
             LegalMoves[position] = new List<Move>();
             return;
@@ -102,13 +108,15 @@ public partial class Board
         
         List<Move> queenMoves = new List<Move>();
         foreach(Position destiny in destinies){
-            queenMoves.Add(new Move(position, destiny));
+            queenMoves.Add(new Move(position, destiny, GetOnPosition(destiny)));
         }
         LegalMoves[position] = queenMoves;
+        pieceMoveWatch.Stop();
     }
 
     private void PawnMoves(Position position)
     {
+        pawnMoveWatch.Start();
         if(enemyChecks.Count == 2){
             LegalMoves[position] = new List<Move>();
             return;
@@ -143,22 +151,23 @@ public partial class Board
         foreach(Position destiny in destinies){
             switch(destiny.row){
                 case 0:
-                    pawnMoves.Add(new Move(position, destiny, 'Q'));
-                    pawnMoves.Add(new Move(position, destiny, 'R'));
-                    pawnMoves.Add(new Move(position, destiny, 'B'));
-                    pawnMoves.Add(new Move(position, destiny, 'N'));
+                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'Q'));
+                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'R'));
+                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'B'));
+                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'N'));
                     break;
                 case 7:
-                    pawnMoves.Add(new Move(position, destiny, 'q'));
-                    pawnMoves.Add(new Move(position, destiny, 'r'));
-                    pawnMoves.Add(new Move(position, destiny, 'b'));
-                    pawnMoves.Add(new Move(position, destiny, 'n'));
+                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'q'));
+                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'r'));
+                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'b'));
+                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'n'));
                     break;
                 default:
-                    pawnMoves.Add(new Move(position, destiny));
+                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny)));
                     break;
             }
         }
         LegalMoves[position] = pawnMoves;
+        pawnMoveWatch.Stop();
     }
 }

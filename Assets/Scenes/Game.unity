@@ -183,8 +183,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   game: {fileID: 1914325127}
-  depth: 2
-  strategy: {fileID: 1292221671}
 --- !u!1 &300795575
 GameObject:
   m_ObjectHideFlags: 0
@@ -697,8 +695,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   game: {fileID: 1914325127}
-  depth: 3
-  strategy: {fileID: 1292221671}
 --- !u!1001 &925283775
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1042,8 +1038,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   game: {fileID: 1914325127}
-  limit: 100
-  strategy: {fileID: 1292221671}
 --- !u!1 &1292221669
 GameObject:
   m_ObjectHideFlags: 0
@@ -1909,12 +1903,12 @@ PrefabInstance:
         type: 3}
       propertyPath: white
       value: 
-      objectReference: {fileID: 148751033}
+      objectReference: {fileID: 1485472018}
     - target: {fileID: 7937455816245257741, guid: c131d14a45205b74c923ab9bc716bd1f,
         type: 3}
       propertyPath: black
       value: 
-      objectReference: {fileID: 1485472018}
+      objectReference: {fileID: 148751033}
     - target: {fileID: 7937455816245257741, guid: c131d14a45205b74c923ab9bc716bd1f,
         type: 3}
       propertyPath: checkTileRef

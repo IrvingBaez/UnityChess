@@ -46,7 +46,7 @@ public class BoardView : MonoBehaviour
         {
            for(int col = 0; col < 8; col++)
             {
-                char? piece = board.GetOnPosition(Position.Create(col, row));
+                char? piece = board.GetOnPosition(col, row);
                 if (piece == null)
                     continue;
 

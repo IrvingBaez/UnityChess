@@ -7,7 +7,7 @@ using UnityEngine;
 public abstract class Strategy : MonoBehaviour
 {
     protected Board board;
-    protected string name;
+    //protected string name;
     public Stopwatch checkmateWatch = new Stopwatch();
 
     protected Dictionary<char, float> pieceValues = new Dictionary<char, float>() {

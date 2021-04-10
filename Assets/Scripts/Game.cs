@@ -53,7 +53,9 @@ public class Game : MonoBehaviour
             case Board.GameState.CHECK_TO_BLACK:
             case Board.GameState.CHECK_TO_WHITE:
                 yield return null;
+                board.StartTimers();
                 currentPlayer.Move();
+                board.CheckTimers();
                 break;
             default:
                 yield return null;

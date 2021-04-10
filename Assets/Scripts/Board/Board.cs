@@ -20,7 +20,7 @@ public partial class Board : ScriptableObject
 
     public int Turn { get; private set; }
 
-    private char?[,] tiles = new char?[8, 8];
+    private char?[] tiles = new char?[64];
     private int halfTurn;
     private int fullTurn;
     private Position enPassant;
@@ -31,14 +31,18 @@ public partial class Board : ScriptableObject
 
     public enum GameState { UNDEFINED, ALIVE, CHECK_TO_WHITE, CHECK_TO_BLACK, CHECKMATE_TO_WHITE, CHECKMATE_TO_BLACK, STALEMATE, INVALID };
 
-    public void PerformMove(Move move)
-    {
+    public void PerformMove(Move move){
+        performeMoveWatch.Start();
+
         char? moving = GetOnPosition(move.origin);
-        char? captured = GetOnPosition(move.destiny);
+
+        bool[] castling = char.IsUpper(moving.Value) ? whiteCastling : blackCastling;
+        move.castling = new bool[]{ castling[0], castling[1] };
+        move.enPassant = enPassant;
+        move.halfturn = halfTurn;
 
         // Forget captured piece
-        if (captured != null)
-        {
+        if (move.capture != null){
             halfTurn = -1;
 
             WhitePieces.Remove(move.destiny);
@@ -46,109 +50,65 @@ public partial class Board : ScriptableObject
         }
 
         // Manage castling on capture
-        if (captured == 'R')
-        {
-            if (move.destiny.col == 0)
-            {
-                whiteCastling[0] = false;
-            }
-            else if (move.destiny.col == 7)
-            {
-                whiteCastling[1] = false;
-            }
-        }
-        else if (captured == 'r')
-        {
-            if (move.destiny.col == 0)
-            {
-                blackCastling[0] = false;
-            }
-            else if (move.destiny.col == 7)
-            {
-                blackCastling[1] = false;
-            }
+        if (move.capture == 'R'){
+            whiteCastling[0] = whiteCastling[0] && move.destiny.col != 0;
+            whiteCastling[1] = whiteCastling[1] && move.destiny.col != 7;
+        } else if (move.capture == 'r'){
+            blackCastling[0] = blackCastling[0] && move.destiny.col != 0;
+            blackCastling[1] = blackCastling[1] && move.destiny.col != 7;
         }
 
         // Manage castling on move
-        if (moving == 'R')
-        {
-            if (move.origin.Equals(Position.Create(0, 7)))
-            {
-                whiteCastling[0] = false;
-            }
-            else if (move.origin.Equals(Position.Create(7, 7)))
-            {
-                whiteCastling[1] = false;
-            }
-        }
-        else if (moving == 'r')
-        {
-            if (move.origin.Equals(Position.Create(0, 0)))
-            {
-                blackCastling[0] = false;
-            }
-            else if (move.origin.Equals(Position.Create(7, 0)))
-            {
-                blackCastling[1] = false;
-            }
+        if (moving == 'R'){
+            whiteCastling[0] = whiteCastling[0] && move.origin.col != 0;
+            whiteCastling[1] = whiteCastling[1] && move.origin.col != 7;
+        } else if (moving == 'r') {
+            blackCastling[0] = blackCastling[0] && move.origin.col != 0;
+            blackCastling[1] = blackCastling[1] && move.origin.col != 7;
         }
 
         // detect and perform castling
-        if (moving == 'K')
-        {
-            if (whiteCastling[0] && move.destiny.col == 2)
-            {
-                tiles[0, 7] = null;
-                tiles[3, 7] = 'R';
+        if (moving == 'K'){
+            if (whiteCastling[0] && move.destiny.col == 2){
+                SetOnPosition(0, 7, null);
+                SetOnPosition(3, 7, 'R');
+            } else if (whiteCastling[1] && move.destiny.col == 6){
+                SetOnPosition(7, 7, null);
+                SetOnPosition(5, 7, 'R');
             }
-            else if (whiteCastling[1] && move.destiny.col == 6)
-            {
-                tiles[7, 7] = null;
-                tiles[5, 7] = 'R';
-            }
+
             whiteCastling = new bool[] { false, false };
-        }
-        else if (moving == 'k')
-        {
-            if (blackCastling[0] && move.destiny.col == 2)
-            {
-                tiles[0, 0] = null;
-                tiles[3, 0] = 'r';
+        } else if (moving == 'k'){
+            if (blackCastling[0] && move.destiny.col == 2){
+                SetOnPosition(0, 0, null);
+                SetOnPosition(3, 0, 'r');
+            } else if (blackCastling[1] && move.destiny.col == 6){
+                SetOnPosition(7, 0, null);
+                SetOnPosition(5, 0, 'r');
             }
-            else if (blackCastling[1] && move.destiny.col == 6)
-            {
-                tiles[7, 0] = null;
-                tiles[5, 0] = 'r';
-            }
+
             blackCastling = new bool[] { false, false };
         }
 
         // detect pawn
-        if (moving == 'P' || moving == 'p')
-        {
+        if (moving == 'P' || moving == 'p'){
             halfTurn = -1;
             int color = GetPieceColor(move.origin);
-            if (move.destiny.Equals(enPassant))
-            {
-                tiles[enPassant.col, enPassant.row - color] = null;
+
+            if (move.destiny.Equals(enPassant)){
+                SetOnPosition(enPassant.col, enPassant.row - color, null);
             }
 
-            if (Math.Abs(move.origin.row - move.destiny.row) == 2)
-            {
+            enPassant = null;
+            if (Math.Abs(move.origin.row - move.destiny.row) == 2){
                 enPassant = Position.Create(move.destiny.col, move.destiny.row + color);
             }
-            else
-            {
-                enPassant = null;
-            }
-        }
-        else
-        {
+        } else {
             enPassant = null;
         }
 
-        tiles[move.origin.col, move.origin.row] = null;
-        tiles[move.destiny.col, move.destiny.row] = move.promotion == null ? moving : move.promotion;
+        SetOnPosition(move.origin.col, move.origin.row, null);
+        SetOnPosition(move.destiny.col, move.destiny.row, move.promotion == null ? moving : move.promotion);
 
         if (moving == 'K')
             WhiteKing = move.destiny;
@@ -163,9 +123,81 @@ public partial class Board : ScriptableObject
         fullTurn += (-Turn + 1) / 2;
         Turn = -Turn;
 
+        performeMoveWatch.Stop();
+
         FindSight();
         FindLegalMoves();
+        FindGameState();
+    }
 
+    public void undoMove(Move move){
+        undoMoveWatch.Start();
+
+        char moving = GetOnPosition(move.destiny).Value;
+
+        halfTurn = move.halfturn;
+        enPassant = move.enPassant;
+
+        // Restore captured piece
+        if (move.capture != null){
+            // halfTurn = -1; Debería recuperar el valor anterior.
+
+            if(char.IsUpper(move.capture.Value))
+                WhitePieces.Add(move.destiny);
+            else
+                BlackPieces.Remove(move.destiny);
+        }
+
+        // Restore castling
+        if (char.IsUpper(moving)){
+            whiteCastling = move.castling;
+        } else {
+            blackCastling = move.castling;
+        }
+
+        // Detect and undo castling
+        if (moving == 'K'){
+            if (move.castling[0] && move.destiny.col == 2){
+                SetOnPosition(0, 7, 'R');
+                SetOnPosition(3, 7, null);
+            } else if (whiteCastling[1] && move.destiny.col == 6){
+                SetOnPosition(7, 7, 'R');
+                SetOnPosition(5, 7, null);
+            }
+        } else if (moving == 'k'){
+            if (blackCastling[0] && move.destiny.col == 2){
+                SetOnPosition(0, 0, 'r');
+                SetOnPosition(3, 0, null);
+            } else if (blackCastling[1] && move.destiny.col == 6){
+                SetOnPosition(7, 0, 'r');
+                SetOnPosition(5, 0, null);
+            }
+        }
+
+        // restore pawn on promotion
+        if (move.promotion != null){
+            moving = char.IsUpper(moving) ? 'P' : 'p';
+        }
+
+        SetOnPosition(move.destiny.col, move.destiny.row, move.capture);
+        SetOnPosition(move.origin.col, move.origin.row, moving);
+
+        if (moving == 'K')
+            WhiteKing = move.origin;
+        if (moving == 'k')
+            BlackKing = move.origin;
+
+        List<Position> changing = char.IsUpper(moving) ? WhitePieces : BlackPieces;
+        changing.Remove(move.destiny);
+        changing.Add(move.origin);
+
+        fullTurn -= (-Turn + 1) / 2;
+        Turn = -Turn;
+
+        undoMoveWatch.Stop();
+
+        FindSight();
+        FindLegalMoves();
         FindGameState();
     }
 
@@ -173,8 +205,12 @@ public partial class Board : ScriptableObject
         return dict.Values.SelectMany(x => x).ToList();
     }
 
+    public List<Move> AllLegalMoves(){
+        return LegalMoves.Values.SelectMany(x => x).ToList();
+    }
+
     private bool AnyLegalMoves(){
-        return LegalMoves.Values.SelectMany(x => x).Count() > 0;
+        return AllLegalMoves().Count() > 0;
     }
 
     private void FindGameState()
@@ -202,9 +238,18 @@ public partial class Board : ScriptableObject
         State = GameState.ALIVE;
     }
 
+    public void SetOnPosition(int col, int row, char? value){
+        tiles[col * 8 + row] = value;
+    }
+
     public char? GetOnPosition(Position position)
     {
-        return tiles[position.col, position.row];
+        return tiles[position.col * 8 + position.row];
+    }
+
+    public char? GetOnPosition(int col, int row)
+    {
+        return tiles[col * 8 + row];
     }
 
     public int GetPieceColor(Position position)
@@ -220,9 +265,9 @@ public partial class Board : ScriptableObject
         {
             for (int col = 0; col < 8; col++)
             {
-                if (tiles[col, row] != null)
+                if (GetOnPosition(col, row) != null)
                 {
-                    boardString += tiles[col, row];
+                    boardString += GetOnPosition(col, row);
                 }
                 else
                 {
