@@ -2,218 +2,161 @@
 using System.Collections.Generic;
 
 public partial class Board{
-    Dictionary<Position, List<Position>> playerSight;
-    Dictionary<Position, List<Position>> playerPins;
-    Dictionary<Position, List<Position>> playerChecks;
+    long friends;
+    long foes;
+    long king;
+    long enemySight;
+    Dictionary<int, long> enemyPins;
+    Dictionary<int, long> enemyChecks;
 
     private void FindSight(){
         sightWatch.Start();
-        WhiteSight  = new Dictionary<Position, List<Position>>();
-        BlackSight  = new Dictionary<Position, List<Position>>();
-        WhitePins   = new Dictionary<Position, List<Position>>();
-        BlackPins   = new Dictionary<Position, List<Position>>();
-        WhiteChecks = new Dictionary<Position, List<Position>>();
-        BlackChecks = new Dictionary<Position, List<Position>>();
 
-        playerSight = WhiteSight;
-        playerPins = WhitePins;
-        playerChecks = WhiteChecks;
-        foreach(Position position in WhitePieces){
-            FindSight(position);
-        }
+        long whitePieces = whiteQueens & whiteBishops & whiteKnights & whiteRooks & whitePawns;
+        long blackPieces = blackQueens & blackBishops & blackKnights & blackRooks & blackPawns;
 
-        playerSight = BlackSight;
-        playerPins = BlackPins;
-        playerChecks = BlackChecks;
-        foreach (Position position in BlackPieces){
-            FindSight(position);
-        }
+        foes = Turn == 1 ? blackPieces & blackKing : whitePieces & whiteKing;
+        friends = Turn == 1 ? whitePieces : blackPieces;
+        king = Turn == 1 ? whiteKing : blackKing;
+        enemyChecks = new Dictionary<int, long>();
+
+        enemySight = KingSight(Turn == 1 ? blackKing : whiteKing);
+        enemySight |= QueenSight(Turn == 1 ? blackQueens : whiteQueens);
+        enemySight |= RookSight(Turn == 1 ? blackRooks : whiteRooks);
+        enemySight |= BishopSight(Turn == 1 ? blackBishops : whiteBishops);
+        enemySight |= KnightSight(Turn == 1 ? blackKnights : whiteKnights);
+        enemySight |= PawnSight(Turn == 1 ? blackPawns : whitePawns);
+
         sightWatch.Stop();
     }
 
-    private void FindSight(Position position){
-        switch (GetOnPosition(position)){
-            case 'K':
-            case 'k':
-                KingSight(position);
-                break;
-            case 'Q':
-            case 'q':
-                QueenSight(position);
-                break;
-            case 'R':
-            case 'r':
-                RookSight(position);
-                break;
-            case 'B':
-            case 'b':
-                BishopSight(position);
-                break;
-            case 'N':
-            case 'n':
-                KnightSight(position);
-                break;
-            case 'P':
-            case 'p':
-                PawnSight(position);
-                break;
-        }
+    // TODO: Optimize
+    private long KingSight(long king){
+        long sightMask = king << 9 | 
+        king << 8 |
+        king << 7 |
+        king << 1 |
+        king >> 1 |
+        king >> 8 |
+        king >> 7 |
+        king >> 9;
+        
+        return sightMask & QueenSight(king);
     }
 
-    private void KingSight(Position position){
-        List<Position> kingSight = new List<Position>();
+    private long QueenSight(long queens){
+        long sight = 0;
 
-        for (int i = -1; i <= 1; i++){
-            for (int j = -1; j <= 1; j++){
-                if (j == 0 && i == 0)
-                    continue;
-                if (Position.Create(position.col + i, position.row + j, out Position checking))
-                    kingSight.Add(checking);
+        for(int pos = 0; pos < 64; pos++){
+            if(IsBitSet(queens, pos)){
+                sight |= SlidingSight(pos, new int[]{0, 1, 2, 3, 4, 5, 6, 7});
             }
         }
 
-        playerSight[position] = kingSight;
+        return sight;
     }
 
-    private void QueenSight(Position position){
-        SlidingSight(position, new List<int[]>{
-            new int[]{ 1, 1},
-            new int[]{ 1,-1},
-            new int[]{-1, 1},
-            new int[]{-1,-1},
-            new int[]{ 0,-1},
-            new int[]{ 0, 1},
-            new int[]{-1, 0},
-            new int[]{ 1, 0}
-        });
+    private long RookSight(long rooks){
+        long sight = 0;
+
+        for(int pos = 0; pos < 64; pos++){
+            if(IsBitSet(rooks, pos)){
+                sight |= SlidingSight(pos, new int[]{1, 3, 4, 6});
+            }
+        }
+
+        return sight;
     }
 
-    private void RookSight(Position position){
-        SlidingSight(position, new List<int[]>{
-            new int[]{ 0,-1},
-            new int[]{ 0, 1},
-            new int[]{-1, 0},
-            new int[]{ 1, 0}
-        });
+    private long BishopSight(long bishops){
+        long sight = 0;
+
+        for(int pos = 0; pos < 64; pos++){
+            if(IsBitSet(bishops, pos)){
+                sight |= SlidingSight(pos, new int[]{0, 2, 5, 7});
+            }
+        }
+
+        return sight;
     }
 
-    private void BishopSight(Position position){
-        SlidingSight(position, new List<int[]>{
-            new int[]{ 1, 1},
-            new int[]{ 1,-1},
-            new int[]{-1, 1},
-            new int[]{-1,-1}
-        });
+    private long KnightSight(long knights){
+        long sight = 0;
+
+        for(int pos = 0; pos < 64; pos++){
+            if(IsBitSet(knights, pos)){
+                int[] threatPositions = knightThreats[pos];
+                for(int i = 0; i < threatPositions.Length; i++){
+                    sight |= (long)1 << threatPositions[i];
+                }
+            }
+        }
+
+        return sight;
     }
 
-    private void SlidingSight(Position position, List<int[]> directions){
-        List<Position> sight = new List<Position>();
-        
-        foreach(int[] direction in directions){
-            int step = 1;
-            int foundPieces = 0;
-            bool kingFound = false;
-            Position pinned = null;
-            List<Position> treath = new List<Position>{ position };
-            
-            while(Position.Create(position.col + step * direction[0],
-                                  position.row + step * direction[1], 
-                                  out Position checking)){
+    private long PawnSight(long pawns){
+        long sight = 0;
+
+        for(int pos = 0; pos < 64; pos++){
+            if(IsBitSet(pawns, pos)){
+                int[] threatPositions = new int[]{pos - Turn * 9, pos - Turn * 7};
                 
-                if(foundPieces == 0 || (foundPieces == 1 && kingFound)){
-                    sight.Add(checking);
+                for(int i = 0; i < threatPositions.Length; i++){
+                    if((pos / 8) - Turn == threatPositions[i] / 8)
+                        sight |= (long)1 << threatPositions[i];
                 }
+            }
+        }
 
-                if(foundPieces == 2 || (foundPieces == 1 && kingFound)){
+        return sight;
+    }
+
+    private long SlidingSight(int position, int[] directionIndexes){
+        long obstacles = (friends ^ position) | foes;
+        long sight = 0;
+
+        for(int index = 0; index < directionIndexes.Length; index++){
+            int direction = directions[directionIndexes[index]];
+
+            long sightLine = 0;
+            bool kingFound = false;
+            int obstaclesFound = 0;
+            int pinnedPosition = 0;
+
+            for(int step = 1; step <= squaresToEdge[directionIndexes[index], position]; step++){
+                int checkingPos = position + step * direction;
+                long checkingMask = (long)1 << checkingPos;
+
+                if(obstaclesFound > 1)
                     break;
+                
+                if((sightLine & king) != 0 && !kingFound){
+                    kingFound = true;
+                    enemyChecks.Add(position, sightLine & ((long) 1 << position));
+
+                    if(pinnedPosition != 0)
+                        enemyPins.Add(pinnedPosition, sightLine & ((long) 1 << position));
                 }
 
-                treath.Add(checking);
+                if(obstaclesFound == 0)
+                    sightLine |= checkingMask;
 
-                char? foundPiece = GetOnPosition(checking);
-                if(foundPiece != null){
-                    if(char.IsUpper(foundPiece.Value) == char.IsUpper(GetOnPosition(position).Value)){
-                        break;
-                    }
+                if(IsBitSet(obstacles, checkingPos)){
+                    obstaclesFound++;
                     
-                    foundPieces++;
-
-                    if(IsEnemyKing(position, checking)){
-                        kingFound = true;
-                    }else{
-                        pinned = checking;
-                    }
-                }
-
-                step++;
-            }
-
-            if(kingFound){
-                if(foundPieces == 1){
-                    playerChecks[position] = treath;
-                }else{
-                    playerPins[pinned] = treath;
+                    if(IsBitSet(foes, checkingPos))
+                        pinnedPosition = checkingPos;
                 }
             }
-        }
-
-        playerSight[position] = sight;
-    }
-
-    private void KnightSight(Position position){
-        List<Position> knightSight = new List<Position>();
-        Position checking;
-
-        int[] skips = new int[] { -2, -1, 1, 2 };
-        
-        foreach (int i in skips){
-            foreach(int j in skips){
-                if((i + j) % 2 != 0){
-                    if (Position.Create(position.col + i, position.row + j, out checking)){
-                        knightSight.Add(checking);
-                        
-                        if(IsEnemyKing(position, checking)){
-                            playerChecks[position] = new List<Position>{ position };
-                        }
-                    }
-                }
-            }
-        }
-
-        playerSight[position] = knightSight;
-    }
-
-    private void PawnSight(Position position){
-        List<Position> pawnSight = new List<Position>();
-        Position checking;
-
-        int color = -GetPieceColor(position);
-        
-        if (Position.Create(position.col - 1, position.row + color, out checking)){
-            pawnSight.Add(checking);
             
-            if(IsEnemyKing(position, checking)){
-                playerChecks[position] = new List<Position>{ position };
-            }
+            sight |= sightLine;
         }
 
-        if (Position.Create(position.col + 1, position.row + color, out checking)){
-            pawnSight.Add(checking);
-
-            if(IsEnemyKing(position, checking)){
-                playerChecks[position] = new List<Position>{ position };
-            }
-        }
-
-        playerSight[position] = pawnSight;
+        return sight;
     }
 
-    internal bool IsEnemyKing(Position piece, Position king){
-        char? kingChar = GetOnPosition(king);
-        if(kingChar == null || char.ToUpper(kingChar.Value) != 'K'){
-            return false;
-        }
-
-        return char.IsUpper(GetOnPosition(piece).Value) ^ char.IsUpper(kingChar.Value);
+    bool IsBitSet(long bitMask, int pos){
+        return (bitMask & (1 << pos)) != 0;
     }
 }

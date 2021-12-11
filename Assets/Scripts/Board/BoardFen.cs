@@ -19,26 +19,7 @@ public partial class Board
             {
                 if (fen[0] != '/')
                 {
-                    SetOnPosition(index % 8, index / 8, fen[0]);
-
-                    //Save pieces and kings positions
-                    if (whiteSymbols.Contains(fen[0]))
-                    {
-                        WhitePieces.Add(Position.Create(index % 8, index / 8));
-                        if(fen[0] == 'K')
-                        {
-                            WhiteKing = Position.Create(index % 8, index / 8);
-                        }
-                    }
-                    else
-                    {
-                        BlackPieces.Add(Position.Create(index % 8, index / 8));
-                        if (fen[0] == 'k')
-                        {
-                            BlackKing = Position.Create(index % 8, index / 8);
-                        }
-                    }
-                    
+                    SetOnPosition(index, fen[0]);
                     index++;
                 }
             }
@@ -79,7 +60,7 @@ public partial class Board
         if (fen[0] != '-')
         {
             int.TryParse(fen[1].ToString(), out int col);
-            enPassant = Position.Create((int)fen[0] - 97, col - 1);
+            enPassant = (long) 1 << (int)fen[0] - 97;
             fen = fen.Substring(1);
         }
         fen = fen.Substring(2);
@@ -113,7 +94,7 @@ public partial class Board
         {
             for(int col = 0; col < 8; col++)
             {
-                if(GetOnPosition(col, row) == null)
+                if(GetOnPosition(col + row * 8) == null)
                 {
                     freeSpaces++;
                 }
@@ -124,7 +105,7 @@ public partial class Board
                         fen += freeSpaces;
                         freeSpaces = 0;
                     }
-                    fen += GetOnPosition(col, row);
+                    fen += GetOnPosition(col + row * 8);
                 }
             }
 
@@ -181,9 +162,9 @@ public partial class Board
             fen += "-";
         }
 
-        if (enPassant != null)
+        if (enPassant != 0)
         {
-            fen += $" {(char)(enPassant.col + 97)}{enPassant.row + 1} ";
+            fen += $" {(char)(enPassant + 97)}{enPassant + 1} ";
         }
         else
         {

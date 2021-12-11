@@ -31,7 +31,7 @@ public class BoardView : MonoBehaviour
     public Sprite blackKnightSprite;
     public Sprite blackPawnSprite;
 
-    [HideInInspector] public Position clicked;
+    [HideInInspector] public int clicked;
 
     public void SetBoard(Board board)
     {
@@ -42,68 +42,64 @@ public class BoardView : MonoBehaviour
     {
         DrawingBoard?.Invoke();
 
-        for (int row = 0; row < 8; row++)
-        {
-           for(int col = 0; col < 8; col++)
-            {
-                char? piece = board.GetOnPosition(col, row);
-                if (piece == null)
-                    continue;
+        for(int position = 63; position >= 0; position--){
+            char? piece = board.GetOnPosition(position);
+            if (piece == null)
+                continue;
 
-                PieceView view = Instantiate(pieceView);
-                view.transform.position = SolveWorldPosition(col, row);
-                switch (piece)
-                {
-                    case 'K':
-                        view.Initialize(whiteKingSprite, col, row, this);
-                        break;
-                    case 'Q':
-                        view.Initialize(whiteQueenSprite, col, row, this);
-                        break;
-                    case 'R':
-                        view.Initialize(whiteRookSprite, col, row, this);
-                        break;
-                    case 'B':
-                        view.Initialize(whiteBishopSprite, col, row, this);
-                        break;
-                    case 'N':
-                        view.Initialize(whiteKnightSprite, col, row, this);
-                        break;
-                    case 'P':
-                        view.Initialize(whitePawnSprite, col, row, this);
-                        break;
-                    case 'k':
-                        view.Initialize(blackKingSprite, col, row, this);
-                        break;
-                    case 'q':
-                        view.Initialize(blackQueenSprite, col, row, this);
-                        break;
-                    case 'r':
-                        view.Initialize(blackRookSprite, col, row, this);
-                        break;
-                    case 'b':
-                        view.Initialize(blackBishopSprite, col, row, this);
-                        break;
-                    case 'n':
-                        view.Initialize(blackKnightSprite, col, row, this);
-                        break;
-                    case 'p':
-                        view.Initialize(blackPawnSprite, col, row, this);
-                        break;
-                }
+            PieceView view = Instantiate(pieceView);
+            view.transform.position = SolveWorldPosition(position);
+            switch (piece)
+            {
+                case 'K':
+                    view.Initialize(whiteKingSprite, position, this);
+                    break;
+                case 'Q':
+                    view.Initialize(whiteQueenSprite, position, this);
+                    break;
+                case 'R':
+                    view.Initialize(whiteRookSprite, position, this);
+                    break;
+                case 'B':
+                    view.Initialize(whiteBishopSprite, position, this);
+                    break;
+                case 'N':
+                    view.Initialize(whiteKnightSprite, position, this);
+                    break;
+                case 'P':
+                    view.Initialize(whitePawnSprite, position, this);
+                    break;
+                case 'k':
+                    view.Initialize(blackKingSprite, position, this);
+                    break;
+                case 'q':
+                    view.Initialize(blackQueenSprite, position, this);
+                    break;
+                case 'r':
+                    view.Initialize(blackRookSprite, position, this);
+                    break;
+                case 'b':
+                    view.Initialize(blackBishopSprite, position, this);
+                    break;
+                case 'n':
+                    view.Initialize(blackKnightSprite, position, this);
+                    break;
+                case 'p':
+                    view.Initialize(blackPawnSprite, position, this);
+                    break;
             }
         }
     }
 
-    public void ShowTile(Position position, Color color)
+    public void ShowTile(int position, Color color)
     {
         ColorTile newTile = Instantiate(colorTile);
         newTile.Initialize(position, this, color);
     }
 
-    public void ShowTiles(List<Position> positions, Color color)
+    public void ShowTiles(List<int> positions, Color color)
     {
-        foreach(Position position in positions)
+        foreach(int position in positions)
         {
             ShowTile(position, color);
         }
@@ -117,12 +113,12 @@ public class BoardView : MonoBehaviour
         }
     }
 
-    public Vector3 SolveWorldPosition(Position position)
+    public Vector3 SolveWorldPosition(int position)
     {
-        return SolveWorldPosition(position.col, position.row);
+        return SolveWorldPosition(7 - (position % 8), (int)position / 8);
     }
 
-    public Vector3 SolveWorldPosition(int col, int row)
+    private Vector3 SolveWorldPosition(int col, int row)
     {
         Vector3 deface = transform.parent.position;
         Vector3 size = this.GetComponent<Renderer>().bounds.size;
@@ -146,16 +142,16 @@ public class BoardView : MonoBehaviour
         return position + Vector3.back;
     }
 
-    public void NotifyClick(int col, int row)
+    public void NotifyClick(int position)
     {
-        clicked = Position.Create(col, row);
+        clicked = position;
         PieceClicked?.Invoke();
 
-        if(board.LegalMoves.TryGetValue(clicked, out List<Move> moves)){
+        if(board.legalMoves.TryGetValue(clicked, out List<Move> moves)){
             ShowTiles(moves, new Color(0, 1, 0, 0.5f));
         }
         
-        ShowTiles(board.BlackSight.Values.SelectMany(x => x).ToList(), new Color(1, 0, 0, 0.5f));
+        //ShowTiles(board.enemySight.Values.SelectMany(x => x).ToList(), new Color(1, 0, 0, 0.5f));
         //ShowTiles(board.whiteSight, new Color(1, 0, 1, 0.5f));
         ShowTile(clicked, new Color(1, 1, 0, 0.5f));
     }

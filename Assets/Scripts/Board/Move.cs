@@ -4,20 +4,19 @@ using UnityEngine;
 
 public class Move
 {
-    public readonly Position origin;
-    public readonly Position destiny;
-    public readonly char? capture;
+    public readonly int origin;
+    public readonly int destiny;
     public readonly char? promotion;
+    public char? capture;
     public bool[] castling;
-    public Position enPassant;
+    public long enPassant;
     public int halfturn;
 
-    internal Move(Position origin, Position destiny, char? capture, char? promotion = null)
+    internal Move(int origin, int destiny, char? promotion = null)
     {
         this.origin = origin;
         this.destiny = destiny;
         this.promotion = promotion;
-        this.capture = capture;
     }
 
     public override string ToString()
@@ -25,5 +24,5 @@ public class Move
         return $"From {origin} to {destiny}";
     }
 
-    public static Move sampleMove = new Move(Position.Create(0, 6), Position.Create(0, 5), null);
+    public static Move sampleMove = new Move(55, 39, null);
 }

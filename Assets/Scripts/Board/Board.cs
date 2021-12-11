@@ -6,24 +6,25 @@ using UnityEngine;
 public partial class Board : ScriptableObject
 {
     public GameState State { get; private set; }
-    public Position WhiteKing { get; private set; }
-    public Position BlackKing { get; private set; }
-    public List<Position> WhitePieces { get; private set; } = new List<Position>();
-    public List<Position> BlackPieces { get; private set; } = new List<Position>();
-    public Dictionary<Position, List<Position>> WhiteSight { get; private set; }
-    public Dictionary<Position, List<Position>> BlackSight { get; private set; }
-    public Dictionary<Position, List<Position>> WhitePins { get; private set; }
-    public Dictionary<Position, List<Position>> BlackPins { get; private set; }
-    public Dictionary<Position, List<Position>> WhiteChecks { get; private set; }
-    public Dictionary<Position, List<Position>> BlackChecks { get; private set; }
-    public Dictionary<Position, List<Move>> LegalMoves { get; private set; }
 
+    public long whitePawns;
+    public long blackPawns;
+    public long whiteKnights;
+    public long blackKnights;
+    public long whiteBishops;
+    public long blackBishops;
+    public long whiteRooks;
+    public long blackRooks;
+    public long whiteQueens;
+    public long blackQueens;
+    public long whiteKing;
+    public long blackKing;
+    public long WhiteSight;
+    public long WhiteBlack;
     public int Turn { get; private set; }
-
-    private char?[] tiles = new char?[64];
     private int halfTurn;
     private int fullTurn;
-    private Position enPassant;
+    private long enPassant;
     private bool[] whiteCastling = new bool[] { false, false };
     private bool[] blackCastling = new bool[] { false, false };
     public static char[] whiteSymbols = new char[] { 'K', 'Q', 'R', 'B', 'N', 'B', 'P' };
@@ -31,25 +32,41 @@ public partial class Board : ScriptableObject
 
     public enum GameState { UNDEFINED, ALIVE, CHECK_TO_WHITE, CHECK_TO_BLACK, CHECKMATE_TO_WHITE, CHECKMATE_TO_BLACK, STALEMATE, INVALID };
 
+    public Board(){
+        whitePawns =    11111111 << 8;
+        blackPawns =    11111111 << 48;
+        whiteRooks =    10000001;
+        blackRooks =    10000001 << 56;
+        whiteKnights =  01000010;
+        blackKnights =  01000010 << 56;
+        whiteBishops =  00100100;
+        blackBishops =  00100100 << 56;
+        whiteQueens =   00010000;
+        blackQueens =   00010000 << 56;
+        whiteKing =     00001000;
+        blackKing =     00001000 << 56;
+
+        State = GameState.ALIVE;
+        Turn = 1;
+        halfTurn = 0;
+        fullTurn = 1;
+    }
     public void PerformMove(Move move){
         performeMoveWatch.Start();
 
         char? moving = GetOnPosition(move.origin);
+        int color = GetPieceColor(move.origin);
 
-        bool[] castling = char.IsUpper(moving.Value) ? whiteCastling : blackCastling;
+        bool[] castling = color == 1 ? whiteCastling : blackCastling;
         move.castling = new bool[]{ castling[0], castling[1] };
         move.enPassant = enPassant;
         move.halfturn = halfTurn;
 
         // Forget captured piece
-        if (move.capture != null){
-            halfTurn = -1;
-
-            WhitePieces.Remove(move.destiny);
-            BlackPieces.Remove(move.destiny);
-        }
+        move.capture = RemoveFromPosition(move.destiny);
 
         // Manage castling on capture
+        /*
         if (move.capture == 'R'){
             whiteCastling[0] = whiteCastling[0] && move.destiny.col != 0;
             whiteCastling[1] = whiteCastling[1] && move.destiny.col != 7;
@@ -93,7 +110,6 @@ public partial class Board : ScriptableObject
         // detect pawn
         if (moving == 'P' || moving == 'p'){
             halfTurn = -1;
-            int color = GetPieceColor(move.origin);
 
             if (move.destiny.Equals(enPassant)){
                 SetOnPosition(enPassant.col, enPassant.row - color, null);
@@ -106,18 +122,15 @@ public partial class Board : ScriptableObject
         } else {
             enPassant = null;
         }
+        */
 
-        SetOnPosition(move.origin.col, move.origin.row, null);
-        SetOnPosition(move.destiny.col, move.destiny.row, move.promotion == null ? moving : move.promotion);
+        RemoveFromPosition(move.origin);
+        SetOnPosition(move.destiny, move.promotion == null ? moving : move.promotion);
 
         if (moving == 'K')
-            WhiteKing = move.destiny;
+            whiteKing = (long) 1 << move.destiny;
         if (moving == 'k')
-            BlackKing = move.destiny;
-
-        List<Position> changing = char.IsUpper(moving.Value) ? WhitePieces : BlackPieces;
-        changing.Remove(move.origin);
-        changing.Add(move.destiny);
+            blackKing = (long) 1 << move.destiny;
 
         halfTurn++;
         fullTurn += (-Turn + 1) / 2;
@@ -138,17 +151,8 @@ public partial class Board : ScriptableObject
         halfTurn = move.halfturn;
         enPassant = move.enPassant;
 
-        // Restore captured piece
-        if (move.capture != null){
-            // halfTurn = -1; Debería recuperar el valor anterior.
-
-            if(char.IsUpper(move.capture.Value))
-                WhitePieces.Add(move.destiny);
-            else
-                BlackPieces.Remove(move.destiny);
-        }
-
         // Restore castling
+        /*
         if (char.IsUpper(moving)){
             whiteCastling = move.castling;
         } else {
@@ -178,18 +182,15 @@ public partial class Board : ScriptableObject
         if (move.promotion != null){
             moving = char.IsUpper(moving) ? 'P' : 'p';
         }
+        */
 
-        SetOnPosition(move.destiny.col, move.destiny.row, move.capture);
-        SetOnPosition(move.origin.col, move.origin.row, moving);
+        SetOnPosition(move.destiny, move.capture);
+        SetOnPosition(move.origin, moving);
 
         if (moving == 'K')
-            WhiteKing = move.origin;
+            whiteKing = (long) 1 << move.origin;
         if (moving == 'k')
-            BlackKing = move.origin;
-
-        List<Position> changing = char.IsUpper(moving) ? WhitePieces : BlackPieces;
-        changing.Remove(move.destiny);
-        changing.Add(move.origin);
+            blackKing = (long) 1 << move.origin;
 
         fullTurn -= (-Turn + 1) / 2;
         Turn = -Turn;
@@ -201,12 +202,8 @@ public partial class Board : ScriptableObject
         FindGameState();
     }
 
-    private List<Position> FlatDict(Dictionary<Position, List<Position>> dict){
-        return dict.Values.SelectMany(x => x).ToList();
-    }
-
     public List<Move> AllLegalMoves(){
-        return LegalMoves.Values.SelectMany(x => x).ToList();
+        return legalMoves.Values.SelectMany(x => x).ToList();
     }
 
     private bool AnyLegalMoves(){
@@ -215,10 +212,9 @@ public partial class Board : ScriptableObject
 
     private void FindGameState()
     {
-        Position king = Turn == 1 ? WhiteKing : BlackKing;
-        List<Position> enemySight = FlatDict(Turn > 0 ? BlackSight : WhiteSight);
+        long king = Turn == 1 ? whiteKing : blackKing;
 
-        if (enemySight.Contains(king))
+        if ((enemySight & king) != 0)
         {
             State = Turn > 0 ? GameState.CHECK_TO_WHITE : GameState.CHECK_TO_BLACK;
             if (!AnyLegalMoves())
@@ -238,23 +234,150 @@ public partial class Board : ScriptableObject
         State = GameState.ALIVE;
     }
 
-    public void SetOnPosition(int col, int row, char? value){
-        tiles[col * 8 + row] = value;
+    private void SetOnPosition(int position, char? value){
+        long positionMask = (long)1 << position;
+
+        switch(value){
+            case 'K':
+                whiteKing |= positionMask;
+                break;
+            case 'Q':
+                whiteQueens |= positionMask;
+                break;
+            case 'B':
+                whiteBishops |= positionMask;
+                break;
+            case 'N':
+                whiteKnights |= positionMask;
+                break;
+            case 'R':
+                whiteRooks |= positionMask;
+                break;
+            case 'P':
+                whitePawns |= positionMask;
+                break;
+            case 'k':
+                blackKing |= positionMask;
+                break;
+            case 'q':
+                blackQueens |= positionMask;
+                break;
+            case 'b':
+                blackBishops |= positionMask;
+                break;
+            case 'n':
+                blackKnights |= positionMask;
+                break;
+            case 'r':
+                blackRooks |= positionMask;
+                break;
+            case 'p':
+                blackPawns |= positionMask;
+                break;
+        }
     }
 
-    public char? GetOnPosition(Position position)
-    {
-        return tiles[position.col * 8 + position.row];
+    private char? RemoveFromPosition(int position){
+        long positionMask = (long)1 << position;
+
+        if(IsBitSet(whitePawns, position)){
+            whitePawns ^= positionMask;
+            return 'P';
+        }
+
+        if(IsBitSet(blackPawns, position)){
+            blackPawns ^= positionMask;
+            return 'p';
+        }
+
+        if(IsBitSet(whiteKnights, position)){
+            whiteKnights ^= positionMask;
+            return 'N';
+        }
+
+        if(IsBitSet(blackKnights, position)){
+            blackKnights ^= positionMask;
+            return 'n';
+        }
+
+        if(IsBitSet(whiteBishops, position)){
+            whiteBishops ^= positionMask;
+            return 'B';
+        }
+
+        if(IsBitSet(blackBishops, position)){
+            blackBishops ^= positionMask;
+            return 'b';
+        }
+
+        if(IsBitSet(whiteRooks, position)){
+            whiteRooks ^= positionMask;
+            return 'R';
+        }
+
+        if(IsBitSet(blackRooks, position)){
+            blackRooks ^= positionMask;
+            return 'r';
+        }
+
+        if(IsBitSet(whiteQueens, position)){
+            whiteQueens ^= positionMask;
+            return 'Q';
+        }
+
+        if(IsBitSet(blackQueens, position)){
+            blackQueens ^= positionMask;
+            return 'q';
+        }
+
+        return null;
     }
 
-    public char? GetOnPosition(int col, int row)
+    public char? GetOnPosition(int position)
     {
-        return tiles[col * 8 + row];
+        long positionMask = (long)1 << position;
+        
+        if((whiteKing & positionMask) != 0)
+            return 'K';
+        if((whiteQueens & positionMask) != 0)
+            return 'Q';
+        if((whiteBishops & positionMask) != 0)
+            return 'B';
+        if((whiteKnights & positionMask) != 0)
+            return 'N';
+        if((whiteRooks & positionMask) != 0)
+            return 'R';
+        if((whitePawns & positionMask) != 0)
+            return 'P';
+        if((blackKing & positionMask) != 0)
+            return 'K';
+        if((blackQueens & positionMask) != 0)
+            return 'Q';
+        if((blackBishops & positionMask) != 0)
+            return 'B';
+        if((blackKnights & positionMask) != 0)
+            return 'N';
+        if((blackRooks & positionMask) != 0)
+            return 'R';
+        if((blackPawns & positionMask) != 0)
+            return 'P';
+        
+        return null;
     }
 
-    public int GetPieceColor(Position position)
+    public int GetPieceColor(int position)
     {
-        return char.IsUpper(GetOnPosition(position).Value) ? 1 : -1;
+        long positionMask = (long)1 << position;
+        long blackPieces = blackKing | blackQueens | blackBishops | blackKnights | blackRooks | blackPawns;
+        long whitePieces = whiteKing | whiteQueens | whiteBishops | whiteKnights | whiteRooks | whitePawns;
+
+        if((whitePieces & positionMask) != 0)
+            return 1;
+
+        if((blackPieces & positionMask) != 0)
+            return -1;
+        
+        return 0;
     }
 
     public override string ToString()
@@ -265,9 +388,9 @@ public partial class Board : ScriptableObject
         {
             for (int col = 0; col < 8; col++)
             {
-                if (GetOnPosition(col, row) != null)
+                if (GetOnPosition(col * 8 + row) != null)
                 {
-                    boardString += GetOnPosition(col, row);
+                    boardString += GetOnPosition(col * 8 + row);
                 }
                 else
                 {

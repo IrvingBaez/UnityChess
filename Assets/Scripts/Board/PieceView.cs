@@ -6,15 +6,13 @@ public class PieceView : MonoBehaviour
     public event System.Action OnPieceClick;
 
     private BoardView boardView;
-    private int col;
-    private int row;
+    private int position;
 
-    public void Initialize(Sprite sprite, int col, int row, BoardView boardView)
+    public void Initialize(Sprite sprite, int position, BoardView boardView)
     {
         this.boardView = boardView;
         boardView.DrawingBoard += DestroyThis;
-        this.col = col;
-        this.row = row;
+        this.position = position;
 
         transform.localScale *= 0.6f;
         GetComponent<SpriteRenderer>().sprite = sprite;
@@ -29,6 +27,6 @@ public class PieceView : MonoBehaviour
 
     private void OnMouseDown()
     {
-        boardView.NotifyClick(col, row);
+        boardView.NotifyClick(position);
     }
 }

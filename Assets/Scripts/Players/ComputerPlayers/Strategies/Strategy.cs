@@ -50,14 +50,15 @@ public abstract class Strategy : MonoBehaviour
     protected float Material()
     {
         float value = 0;
-        float holder;
-
+        //float holder;
+        /*
         foreach (Position piece in board.WhitePieces.Concat(board.BlackPieces))
         {
             //UnityEngine.Debug.Log(piece);
             pieceValues.TryGetValue(board.GetOnPosition(piece).Value, out holder);
             value += holder;
         }
+        */
 
         return value;
     }
@@ -84,7 +85,7 @@ public abstract class Strategy : MonoBehaviour
 
     protected float Space()
     {
-        return board.WhiteSight.Count - board.BlackSight.Count;
+        return 0; //board.whiteSight.Count - board.wlackSight.Count;
     }
 
     protected float DistanceToKing()

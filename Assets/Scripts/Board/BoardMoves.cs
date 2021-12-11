@@ -3,171 +3,150 @@ using System.Collections.Generic;
 using System.Linq;
 public partial class Board
 {
-    List<Position> enemyPieces;
-    Dictionary<Position, List<Position>> enemyPins;
-    Dictionary<Position, List<Position>> enemyChecks;
-    List<Position> playerPieces;
+    //List<Position> enemyPieces;
+    //Dictionary<Position, List<Position>> enemyPins;
+    //Dictionary<Position, List<Position>> enemyChecks;
+    //List<Position> playerPieces;
+
+    long playerSight;
+    long playerPieces;
+    long enemyPieces;
+
+    public Dictionary<int, List<Move>> legalMoves;
 
     public void FindLegalMoves(){
         moveWatch.Start();
-        LegalMoves  = new Dictionary<Position, List<Move>>();
+        legalMoves = new Dictionary<int, List<Move>>();
 
-        playerSight     = Turn == 1 ? WhiteSight    : BlackSight;
-        playerPieces    = Turn == 1 ? WhitePieces   : BlackPieces;
-        enemyPieces     = Turn == 1 ? BlackPieces   : WhitePieces;
-        enemyPins       = Turn == 1 ? BlackPins     : WhitePins;
-        enemyChecks     = Turn == 1 ? BlackChecks   : WhiteChecks;
-        
-        foreach(Position position in playerPieces){
-            FindLegalMoves(position);
-        }
-        moveWatch.Stop();
-    }
+        long pawns      = Turn == 1 ? whitePawns    : blackPawns;
+        long knights    = Turn == 1 ? whiteKnights  : blackKnights;
+        long bishops    = Turn == 1 ? whiteBishops  : blackBishops;
+        long rooks      = Turn == 1 ? whiteRooks    : blackRooks;
+        long queens      = Turn == 1 ? whiteQueens   : blackQueens;
+        long king       = Turn == 1 ? whiteKing     : blackKing;
 
-    public void FindLegalMoves(Position position)
-    {
-        if(GetPieceColor(position) != Turn){
-            return;
-        }
+        for(int position = 0; position < 64; position ++){
+            if(IsBitSet(pawns, position)){
+                legalMoves.Add(position, LongToMoveList(position, PawnMoves(position)));
+            }
 
-        switch (GetOnPosition(position)){
-            case 'K':
-            case 'k':
-                KingMoves(position);
-                break;
-            case 'Q':
-            case 'q':
-            case 'R':
-            case 'r':
-            case 'B':
-            case 'b':
-            case 'N':
-            case 'n':
-                PieceMoves(position);
-                break;
-            case 'P':
-            case 'p':
-                PawnMoves(position);
-                break;
-        }
-    }
+            if(IsBitSet(king, position)){
+                legalMoves.Add(position, LongToMoveList(position, KingMoves(position)));
+            }
 
-    private void KingMoves(Position position)
-    {
-        kingMoveWatch.Start();
-        List<Move> kingMoves = new List<Move>();
+            if(IsBitSet(bishops, position)){
+                legalMoves.Add(position, LongToMoveList(position, PieceMoves(position, BishopSight(position))));
+            }
 
-        List<Position> opponentSight = FlatDict(Turn == 1 ? BlackSight : WhiteSight);
-        bool[] castlig = Turn == 1 ? whiteCastling : blackCastling;
+            if(IsBitSet(rooks, position)){
+                legalMoves.Add(position, LongToMoveList(position, PieceMoves(position, RookSight(position))));
+            }
 
-        foreach (Position checking in playerSight[position]){
-            if (!opponentSight.Contains(checking) && !playerPieces.Contains(checking)){
-                kingMoves.Add(new Move(position, checking, GetOnPosition(checking)));
+            if(IsBitSet(queens, position)){
+                legalMoves.Add(position, LongToMoveList(position, PieceMoves(position, QueenSight(position))));
+            }
+
+            if(IsBitSet(knights, position)){
+                legalMoves.Add(position, LongToMoveList(position, PieceMoves(position, KnightSight(position))));
             }
         }
 
-        if (castlig[0] &&
-            !playerPieces.Contains(Position.Create(position.col - 1, position.row)) &&
-            !playerPieces.Contains(Position.Create(position.col - 2, position.row)) &&
-            !playerPieces.Contains(Position.Create(position.col - 3, position.row)) &&
-            !opponentSight.Contains(Position.Create(position.col - 1, position.row)) &&
-            !opponentSight.Contains(Position.Create(position.col - 2, position.row))
-            ){
-            kingMoves.Add(new Move(position, Position.Create(position.col - 2, position.row), null));
-        }
-
-        if (castlig[1] &&
-            !playerPieces.Contains(Position.Create(position.col + 1, position.row)) &&
-            !playerPieces.Contains(Position.Create(position.col + 2, position.row)) &&
-            !opponentSight.Contains(Position.Create(position.col + 1, position.row)) &&
-            !opponentSight.Contains(Position.Create(position.col + 2, position.row))
-            ){
-            kingMoves.Add(new Move(position, Position.Create(position.col + 2, position.row), null));
-        }
-
-        LegalMoves[position] = kingMoves;
-        kingMoveWatch.Stop();
+        moveWatch.Stop();
     }
 
-    private void PieceMoves(Position position){
-        pieceMoveWatch.Start();
-        if(enemyChecks.Count == 2){
-            LegalMoves[position] = new List<Move>();
-            return;
-        }
-        
-        List<Position> destinies = playerSight[position].Except(playerPieces).ToList();
+    private List<Move> LongToMoveList(int origin, long destinies){
+        List<Move> moves = new List<Move>();
 
-        if(enemyPins.TryGetValue(position, out List<Position> pin)){
-            destinies = pin.Intersect(destinies).ToList();
-        }
+        int color = GetPieceColor(origin);
+        bool isPromotion = IsBitSet((Turn == 1 ? whitePawns : blackPawns), origin) && origin / 8 == 3.5 + 3.5 * color;
+        char[] promotions = color == 1 ? new char[]{'Q', 'R', 'B', 'N'} : new char[]{'q', 'r', 'b', 'n'};
 
-        if(enemyChecks.Count == 1){
-            destinies = enemyChecks.Values.SelectMany(x => x).ToList().Intersect(destinies).ToList();
-        }
-        
-        List<Move> queenMoves = new List<Move>();
-        foreach(Position destiny in destinies){
-            queenMoves.Add(new Move(position, destiny, GetOnPosition(destiny)));
-        }
-        LegalMoves[position] = queenMoves;
-        pieceMoveWatch.Stop();
-    }
 
-    private void PawnMoves(Position position)
-    {
-        pawnMoveWatch.Start();
-        if(enemyChecks.Count == 2){
-            LegalMoves[position] = new List<Move>();
-            return;
-        }
-
-        //Captures and en passant
-        List<Position> destinies = playerSight[position].Intersect(enemyPieces.Union(new List<Position>{ enPassant })).ToList();
-
-        //Steps and double steps
-        int step = -GetPieceColor(position);
-        Position forward = Position.Create(position.col, position.row + step);
-        
-        if(GetOnPosition(forward) == null){
-            destinies.Add(forward);
-            if (position.row == (1 - step) * 2.5 + 1){
-                forward = Position.Create(position.col, position.row + 2 * step);
-                if (GetOnPosition(forward) == null){
-                    destinies.Add(forward);
+        for(int destiny = 0; destiny < 64; destiny++){
+            if(IsBitSet(destinies, destiny)){
+                if(isPromotion){
+                    foreach(char promotion in promotions){
+                        moves.Add(new Move(origin, destiny, promotion));
+                    }
+                }else{
+                    moves.Add(new Move(origin, destiny));
                 }
             }
         }
 
-        if(enemyPins.TryGetValue(position, out List<Position> pin)){
-            destinies = pin.Intersect(destinies).ToList();
+        return moves;
+    }
+
+    // TODO: add castling.
+    private long KingMoves(long king)
+    {
+        kingMoveWatch.Start();
+        long moveMask = KingSight(king);
+        moveMask ^= moveMask & enemySight;
+
+        kingMoveWatch.Stop();
+        return moveMask;
+    }
+
+    private long PieceMoves(int position, long sight){
+        pieceMoveWatch.Start();
+
+        if(enemyChecks.Count > 1)
+            return 0;
+        
+        long destinies = sight;
+        if(enemyPins.TryGetValue(position, out long pin)){
+            destinies &= pin;
         }
 
         if(enemyChecks.Count == 1){
-            destinies = enemyChecks.Values.SelectMany(x => x).ToList().Intersect(destinies).ToList();
+            destinies &= enemyChecks.FirstOrDefault().Value;
         }
 
-        List<Move> pawnMoves = new List<Move>();
-        foreach(Position destiny in destinies){
-            switch(destiny.row){
-                case 0:
-                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'Q'));
-                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'R'));
-                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'B'));
-                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'N'));
-                    break;
-                case 7:
-                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'q'));
-                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'r'));
-                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'b'));
-                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny), 'n'));
-                    break;
-                default:
-                    pawnMoves.Add(new Move(position, destiny, GetOnPosition(destiny)));
-                    break;
+        pieceMoveWatch.Stop();
+        return destinies;
+    }
+
+    private long PawnMoves(int position)
+    {
+        pawnMoveWatch.Start();
+
+        if(enemyChecks.Count > 1)
+            return 0;
+
+        int color = GetPieceColor(position);
+
+        // Captures.
+        // TODO: enpassant.
+        long destinies = PawnSight(position);
+        if(GetOnPosition(position + 9 * color) == null)
+            destinies ^= (long) 1 << position + 9 * color;
+
+        if(GetOnPosition(position + 7 * color) == null)
+            destinies ^= (long) 1 << position + 7 * color;
+
+        //Steps and double steps
+        int forward = position + 8 * color;
+        if(GetOnPosition(forward) == null){
+            destinies |= (long) 1 << forward;
+
+            if (position / 8 == 3.5 - 2.5 * color){
+                forward += 8 * color;
+                if (GetOnPosition(forward) == null){
+                    destinies |= (long) 1 << forward;
+                }
             }
         }
-        LegalMoves[position] = pawnMoves;
+
+        if(enemyPins.TryGetValue(position, out long pin)){
+            destinies &= pin;
+        }
+
+        if(enemyChecks.Count == 1){
+            destinies &= enemyChecks.FirstOrDefault().Value;
+        }
+
         pawnMoveWatch.Stop();
+        return destinies;
     }
 }

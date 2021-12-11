@@ -7,7 +7,7 @@ public class MoveTile : MonoBehaviour
     private static event System.Action TileClicked;
     
     private HumanPlayer player;
-    private Position position;
+    private int position;
     private Move move;
 
     public void Initialize(HumanPlayer player, Move move)
